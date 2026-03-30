@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>פאזל קסום ✨</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { 
+            --primary: #6c5ce7; 
+            --primary-dark: #a29bfe;
+            --bg: #f0f2f5;
+            --glass: rgba(255, 255, 255, 0.9);
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: radial-gradient(circle at center, #ffffff 0%, #dfe6e9 100%);
+            margin: 0; 
+            overflow: hidden; 
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .menu-trigger {
+            position: fixed; top: 20px; right: 20px; z-index: 1001;
+            background: var(--primary); color: white; border: none;
+            width: 60px; height: 60px; border-radius: 50%; font-size: 28px;
+            cursor: pointer; box-shadow: 0 8px 15px rgba(108, 92, 231, 0.3);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .menu-trigger:hover { transform: scale(1.1) rotate(5deg); }
+
+        #playAgainBtn {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1500; display: none; padding: 20px 50px; 
+            font-size: 26px; border-radius: 50px;
+            background: var(--primary); color: white; border: none;
+            cursor: pointer; font-weight: bold;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: translate(-50%, -50%) scale(0); } to { transform: translate(-50%, -50%) scale(1); } }
+
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(12px); z-index: 2000;
+            display: none; flex-direction: column; align-items: center; padding: 30px;
+            color: white; overflow-y: auto;
+        }
+        .overlay.active { display: flex; }
+
+        .overlay-header { 
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; max-width: 600px; margin-bottom: 30px; 
+        }
+
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 20px; width: 100%; max-width: 700px; padding-bottom: 50px;
+        }
+
+        .gallery-item-container { position: relative; aspect-ratio: 1; border-radius: 15px; overflow: visible; }
+        .gallery-item { 
+            width: 100%; height: 100%; border-radius: 15px; object-fit: cover; 
+            cursor: pointer; border: 4px solid transparent; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .gallery-item:hover { transform: translateY(-5px); border-color: var(--primary-dark); }
+
+        .action-row { 
+            display: flex; gap: 15px; margin-bottom: 35px; flex-wrap: wrap; 
+            justify-content: center; background: rgba(255,255,255,0.1); 
+            padding: 20px; border-radius: 20px;
+        }
+        
+        .btn { 
+            background: var(--primary); color: white; border: none; padding: 12px 25px; 
+            border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 16px;
+            transition: all 0.2s;
+        }
+        .btn:active { transform: scale(0.95); }
+
+        #main-canvas { display: block; max-width: 100%; max-height: 100%; }
+        
+        .instruction { 
+            position: fixed; bottom: 25px; width: 100%; text-align: center; 
+            pointer-events: none; font-size: 20px; color: #2d3436; 
+            font-weight: 600; opacity: 0.5; letter-spacing: 1px;
+        }
+
+        .delete-btn {
+            position: absolute; top: -10px; right: -10px; background: #ff7675;
+            color: white; width: 30px; height: 30px; border-radius: 50%;
+            text-align: center; line-height: 28px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<audio id="snapSound" src="snap.mp3" preload="auto"></audio>
+<audio id="winSound" src="success.mp3" preload="auto"></audio>
+
+<button class="menu-trigger" onclick="toggleOverlay()">🖼️</button>
+<button id="playAgainBtn" onclick="resetToGallery()">🎮 לשחק שוב?</button>
+
+<div class="overlay" id="galleryOverlay">
+    <div class="overlay-header">
+        <h2 style="margin:0; font-size:28px;">בחרו תמונה לפאזל ✨</h2>
+        <button class="btn" style="background:#ff7675" onclick="toggleOverlay()">סגור ×</button>
+    </div>
+
+    <div class="action-row">
+        <input type="file" id="imageInput" accept="image/*" style="display:none">
+        <button class="btn" onclick="document.getElementById('imageInput').click()">📷 מהגלריה שלך</button>
+        <button class="btn" style="background:#0984e3" onclick="addUrlImage()">🌐 מהאינטרנט</button>
+        <select id="difficulty" style="padding:12px; border-radius:12px; font-size:16px; border:none; outline:none;">
+            <option value="2">4 חלקים (קל)</option>
+            <option value="3" selected>9 חלקים (בינוני)</option>
+            <option value="4">16 חלקים (קצת קשה)</option>
+            <option value="5">25 חלקים (קשה)</option>
+        </select>
+    </div>
+
+    <div class="gallery-grid" id="predefinedGallery"></div>
+</div>
+
+<canvas id="main-canvas"></canvas>
+<div class="instruction">גררו את החלקים למקומם ✨</div>
+
+<script>
+let viewWidth = 0;
+let viewHeight = 0;
+const canvas = document.getElementById('main-canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = "high";
+let img = new Image();
+let pieces = [];
+let selectedPiece = null;
+let puzzleOffset = { x: 0, y: 0 };
+let puzzleSize = { w: 0, h: 0 };
+
+function toggleOverlay() {
+    document.getElementById('galleryOverlay').classList.toggle('active');
+}
+
+async function loadGallery() {
+    const galleryEl = document.getElementById('predefinedGallery');
+    galleryEl.innerHTML = ''; 
+    const extensions = ['jpg', 'png', 'jpeg', 'webp'];
+    for (let i = 1; i <= 15; i++) {
+        for (let ext of extensions) {
+            const src = `images/${i}.${ext}`;
+            const exists = await new Promise(r => {
+                const t = new Image(); t.onload = () => r(true); t.onerror = () => r(false); t.src = src;
+            });
+            if (exists) { createGalleryItem(src, false); break; }
+        }
+    }
+    const saved = JSON.parse(localStorage.getItem('puzzle_web_images') || '[]');
+    saved.forEach((url, index) => createGalleryItem(url, true, index));
+}
+
+function createGalleryItem(src, isWeb, index = null) {
+    const galleryEl = document.getElementById('predefinedGallery');
+    const container = document.createElement('div');
+    container.className = 'gallery-item-container';
+    const thumb = document.createElement('img');
+    thumb.src = src;
+    thumb.className = 'gallery-item';
+    thumb.onclick = () => {
+        img = new Image();
+        if(isWeb) img.crossOrigin = "Anonymous";
+        img.onload = () => { 
+            document.getElementById('playAgainBtn').style.display = 'none';
+            initGame(); 
+            toggleOverlay(); 
+        };
+        img.src = src;
+    };
+    container.appendChild(thumb);
+    if (isWeb) {
+        const del = document.createElement('div');
+        del.innerHTML = '×';
+        del.className = 'delete-btn';
+        del.onclick = (e) => { e.stopPropagation(); removeWebImage(index); };
+        container.appendChild(del);
+    }
+    galleryEl.appendChild(container);
+}
+
+function addUrlImage() {
+    const url = prompt("הדבק כתובת תמונה:");
+    if (url && url.startsWith('http')) {
+        const saved = JSON.parse(localStorage.getItem('puzzle_web_images') || '[]');
+        saved.push(url);
+        localStorage.setItem('puzzle_web_images', JSON.stringify(saved));
+        loadGallery();
+    }
+}
+
+function removeWebImage(index) {
+    const saved = JSON.parse(localStorage.getItem('puzzle_web_images') || '[]');
+    saved.splice(index, 1);
+    localStorage.setItem('puzzle_web_images', JSON.stringify(saved));
+    loadGallery();
+}
+
+class Piece {
+    constructor(r, c, size, pW, pH, img, tabs) {
+        this.r = r; 
+        this.c = c; 
+        this.size = size;
+        this.pW = pW; 
+        this.pH = pH; 
+        this.img = img;
+        this.tabs = tabs;
+        
+        this.tabSize = Math.min(pW, pH) * 0.28;
+        // שטח ביטחון ללשוניות
+        this.tabBuffer = this.tabSize * 1.5;
+
+        // מיקומי המטרה מעוגלים למניעת זיוף פיקסלים
+        this.targetX = Math.round(puzzleOffset.x + (c * pW));
+        this.targetY = Math.round(puzzleOffset.y + (r * pH));
+        
+        this.resetPosition();
+        this.isLocked = false;
+        this.flashAlpha = 0;
+        this.groupId = `r${r}c${c}`;
+    }
+
+    resetPosition() {
+        const padding = 40;
+        this.x = Math.round(Math.random() * (viewWidth - this.pW - padding * 2) + padding);
+        this.y = Math.round(Math.random() * (viewHeight - this.pH - padding * 2) + padding);
+    }
+
+    draw(context, isGhost = false) {
+        context.save();
+        
+        // עיגול מיקומים - קריטי למניעת כפילויות באייפד
+        const posX = Math.round(isGhost ? this.targetX : this.x);
+        const posY = Math.round(isGhost ? this.targetY : this.y);
+
+        if (isGhost) {
+            context.translate(posX, posY);
+            context.beginPath();
+            this.createPath(context);
+            context.strokeStyle = "rgba(0,0,0,0.2)";
+            context.lineWidth = 1;
+            context.stroke();
+            context.fillStyle = "rgba(0,0,0,0.05)";
+            context.fill();
+            context.restore();
+            return;
+        }
+
+        // צל רק לחלק שנגרר
+        if (selectedPiece && selectedPiece.groupId === this.groupId) {
+            context.shadowColor = "rgba(0,0,0,0.3)";
+            context.shadowBlur = 10;
+        }
+
+        context.translate(posX, posY);
+        context.beginPath();
+        this.createPath(context);
+        context.clip(); // חיתוך הצורה המדויקת של הפאזל
+
+        const sw = this.img.width / this.size;
+        const sh = this.img.height / this.size;
+        const sx = this.c * sw;
+        const sy = this.r * sh;
+        
+        // חישוב יחס ה-Buffer
+        const bX = this.tabBuffer;
+        const bY = this.tabBuffer;
+        const sBX = (bX / this.pW) * sw;
+        const sBY = (bY / this.pH) * sh;
+
+        // ציור התמונה עם Math.round על כל הפרמטרים
+        context.drawImage(
+            this.img,
+            Math.round(sx - sBX), Math.round(sy - sBY), 
+            Math.round(sw + sBX * 2), Math.round(sh + sBY * 2),
+            Math.round(-bX), Math.round(-bY), 
+            Math.round(this.pW + bX * 2), Math.round(this.pH + bY * 2)
+        );
+
+        // סגירת הקצוות עם Stroke למניעת קווים לבנים
+        context.restore();
+        context.save();
+        context.translate(posX, posY);
+        context.beginPath();
+        this.createPath(context);
+        context.strokeStyle = this.isLocked ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.5)";
+        context.lineWidth = 1.2;
+        context.stroke();
+
+        context.restore();
+    }
+
+    createPath(ctx) {
+        const { pW, pH, tabSize, tabs } = this; 
+        const s = tabSize;
+        ctx.moveTo(0, 0);
+        if (tabs.top !== 0) { ctx.lineTo(pW*0.35, 0); ctx.bezierCurveTo(pW*0.35, -s*tabs.top, pW*0.65, -s*tabs.top, pW*0.65, 0); }
+        ctx.lineTo(pW, 0);
+        if (tabs.right !== 0) { ctx.lineTo(pW, pH*0.35); ctx.bezierCurveTo(pW+s*tabs.right, pH*0.35, pW+s*tabs.right, pH*0.65, pW, pH*0.65); }
+        ctx.lineTo(pW, pH);
+        if (tabs.bottom !== 0) { ctx.lineTo(pW*0.65, pH); ctx.bezierCurveTo(pW*0.65, pH+s*tabs.bottom, pW*0.35, pH+s*tabs.bottom, pW*0.35, pH); }
+        ctx.lineTo(0, pH);
+        if (tabs.left !== 0) { ctx.lineTo(0, pH*0.65); ctx.bezierCurveTo(-s*tabs.left, pH*0.65, -s*tabs.left, pH*0.35, 0, pH*0.35); }
+        ctx.closePath();
+    }
+
+    contains(mx, my) { return mx > this.x && mx < this.x + this.pW && my > this.y && my < this.y + this.pH; }
+}
+
+function initGame() {
+    if (!img.src) return;
+    pieces = [];
+    const size = parseInt(document.getElementById('difficulty').value);
+    const ratio = img.width / img.height;
+    let availableW = viewWidth * 0.8;
+    let availableH = viewHeight * 0.7;
+    let w = availableW;
+    let h = w / ratio;
+    if (h > availableH) { h = availableH; w = h * ratio; }
+    puzzleSize = { w, h };
+    puzzleOffset = { x: (viewWidth - w) / 2, y: (viewHeight - h) / 2 };
+    
+    const hTabs = Array(size+1).fill().map(() => Array(size).fill(0));
+    const vTabs = Array(size).fill().map(() => Array(size+1).fill(0));
+    for(let i=0; i<size; i++) for(let j=1; j<size; j++) {
+        hTabs[j][i] = Math.random() > 0.5 ? 1 : -1;
+        vTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
+    }
+
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            const tabs = {
+                top: r === 0 ? 0 : hTabs[r][c],
+                right: c === size - 1 ? 0 : vTabs[r][c+1],
+                bottom: r === size - 1 ? 0 : -hTabs[r+1][c],
+                left: c === 0 ? 0 : -vTabs[r][c]
+            };
+            pieces.push(new Piece(r, c, size, w/size, h/size, img, tabs));
+        }
+    }
+}
+
+function render() {
+    ctx.clearRect(0, 0, viewWidth, viewHeight);
+    
+    // 1. קודם כל מציירים את ה"חורים" (הקווים על הלוח)
+    pieces.forEach(p => p.draw(ctx, true));
+
+    // 2. מציירים את החלקים הנעולים
+    pieces.filter(p => p.isLocked).forEach(p => p.draw(ctx));
+
+    // 3. מציירים את החלקים החופשיים
+    pieces.filter(p => !p.isLocked && (!selectedPiece || p.groupId !== selectedPiece.groupId)).forEach(p => p.draw(ctx));
+
+    // 4. החלק שביד תמיד למעלה
+    if (selectedPiece) {
+        pieces.filter(p => p.groupId === selectedPiece.groupId).forEach(p => p.draw(ctx));
+    }
+    
+    requestAnimationFrame(render);
+}
+
+function onStart(e) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    
+    for (let i = pieces.length - 1; i >= 0; i--) {
+        const p = pieces[i];
+        if (!p.isLocked && p.contains(cx, cy)) {
+            selectedPiece = p;
+            p.offX = cx - p.x; p.offY = cy - p.y;
+            const group = pieces.filter(x => x.groupId === p.groupId);
+            group.forEach(x => {
+                const idx = pieces.indexOf(x);
+                pieces.splice(idx, 1); pieces.push(x);
+            });
+            break;
+        }
+    }
+}
+
+function onMove(e) {
+    if (!selectedPiece) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const dx = cx - selectedPiece.offX - selectedPiece.x;
+    const dy = cy - selectedPiece.offY - selectedPiece.y;
+    pieces.forEach(p => { if (p.groupId === selectedPiece.groupId) { p.x += dx; p.y += dy; } });
+    if(e.cancelable) e.preventDefault();
+}
+
+function onEnd() {
+    if (!selectedPiece) return;
+    const group = pieces.filter(p => p.groupId === selectedPiece.groupId);
+    const first = group[0];
+    const snapSound = document.getElementById('snapSound');
+    
+    if (Math.hypot(first.x - first.targetX, first.y - first.targetY) < 35) {
+        group.forEach(p => { p.x = p.targetX; p.y = p.targetY; p.isLocked = true; p.flashAlpha = 0.8; });
+        snapSound.currentTime = 0; snapSound.play().catch(() => {});
+    } else {
+        pieces.forEach(other => {
+            if (other.isLocked || group.includes(other)) return;
+            group.forEach(p => {
+                const isNeighbor = (Math.abs(p.r - other.r) === 1 && p.c === other.c) || (Math.abs(p.c - other.c) === 1 && p.r === other.r);
+                if (isNeighbor) {
+                    const ex = p.x + (other.c - p.c) * p.pW; const ey = p.y + (other.r - p.r) * p.pH;
+                    if (Math.hypot(other.x - ex, other.y - ey) < 30) {
+                        const oldId = other.groupId; const newId = p.groupId;
+                        const dx = other.x - ex, dy = other.y - ey;
+                        pieces.forEach(ptm => { if (ptm.groupId === oldId) { ptm.groupId = newId; ptm.x -= dx; ptm.y -= dy; } });
+                        snapSound.currentTime = 0; snapSound.play().catch(() => {});
+                    }
+                }
+            });
+        });
+    }
+    
+    if (pieces.length > 0 && pieces.every(p => p.isLocked)) {
+        const winSound = document.getElementById('winSound');
+        winSound.currentTime = 0; winSound.play().catch(() => {});
+        confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
+        setTimeout(() => { document.getElementById('playAgainBtn').style.display = 'block'; }, 1000);
+    }
+    selectedPiece = null;
+}
+
+function resetToGallery() {
+    document.getElementById('playAgainBtn').style.display = 'none';
+    toggleOverlay();
+}
+
+function unlockAudio() {
+    const sounds = [document.getElementById('snapSound'), document.getElementById('winSound')];
+    sounds.forEach(s => { s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(() => {}); });
+    window.removeEventListener('touchstart', unlockAudio);
+    window.removeEventListener('mousedown', unlockAudio);
+}
+
+function resize() {
+    dpr = window.devicePixelRatio || 1;
+
+    viewWidth = window.innerWidth;
+    viewHeight = window.innerHeight;
+
+    canvas.width = viewWidth * dpr;
+    canvas.height = viewHeight * dpr;
+
+    canvas.style.width = viewWidth + "px";
+    canvas.style.height = viewHeight + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    if (img.src) initGame();
+}
+
+window.addEventListener('resize', resize);
+canvas.addEventListener('mousedown', onStart);
+canvas.addEventListener('touchstart', onStart, {passive: false});
+window.addEventListener('mousemove', onMove);
+window.addEventListener('touchmove', onMove, {passive: false});
+window.addEventListener('mouseup', onEnd);
+window.addEventListener('touchend', onEnd);
+window.addEventListener('touchstart', unlockAudio);
+window.addEventListener('mousedown', unlockAudio);
+
+document.getElementById('imageInput').onchange = (e) => {
+    const r = new FileReader();
+    r.onload = (ev) => { 
+        img = new Image(); 
+        img.onload = () => { initGame(); toggleOverlay(); };
+        img.src = ev.target.result; 
+    };
+    r.readAsDataURL(e.target.files[0]);
+};
+
+window.addEventListener('DOMContentLoaded', () => { 
+    resize(); render(); loadGallery();
+    setTimeout(() => {
+        const first = document.querySelector('.gallery-item');
+        if(first) first.click(); else toggleOverlay();
+    }, 500);
+});
+</script>
+</body>
+</html>
