@@ -488,56 +488,74 @@ class Piece {
 
 // --- עדכון פונקציית ה-resize ---
 
-    function initGame() {
-        if (!img.src) return;
-        
-        pieces = [];
-        isGameOver = false;
-        const size = parseInt(document.getElementById('difficulty').value);
-        const ratio = img.width / img.height;
+function initGame() {
+    if (!img.src) return;
+    
+    pieces = [];
+    isGameOver = false;
+    const size = parseInt(document.getElementById('difficulty').value);
+    
+    // 1. חישוב היחס המקורי
+    const imgRatio = img.naturalWidth / img.naturalHeight;
+    
+    // 2. קביעת גודל מקסימלי לוגי (80% מהמסך)
+    let maxW = viewWidth * 0.8;
+    let maxH = viewHeight * 0.7;
+    
+    let targetW, targetH;
 
-        // במקום חילוק פשוט, אנחנו מוודאים שכל חלק מקבל כמות פיקסלים שלמה מהמקור
-        const sW = Math.floor(img.naturalWidth / size);
-        const sH = Math.floor(img.naturalHeight / size);
-        
-        let w = viewWidth * 0.8;
-        let h = w / ratio;
-        
-        if (h > viewHeight * 0.7) {
-            h = viewHeight * 0.7;
-            w = h * ratio;
-        }
-        
-        puzzleSize = { w: w, h: h };
-        puzzleOffset = { x: (viewWidth - w) / 2, y: (viewHeight - h) / 2 };
-        
-        const hTabs = [];
-        const vTabs = [];
-        
-        for (let i = 0; i <= size; i++) {
-            hTabs[i] = [];
-            vTabs[i] = [];
-            for (let j = 0; j <= size; j++) {
-                hTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
-                vTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
-            }
-        }
+    // 3. התאמת הממדים לשמירה על יחס התמונה
+    if (maxW / imgRatio <= maxH) {
+        targetW = maxW;
+        targetH = targetW / imgRatio;
+    } else {
+        targetH = maxH;
+        targetW = targetH * imgRatio;
+    }
 
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const tabs = {
-                    top: (r === 0) ? 0 : hTabs[r][c],
-                    right: (c === size - 1) ? 0 : vTabs[r][c + 1],
-                    bottom: (r === size - 1) ? 0 : -hTabs[r + 1][c],
-                    left: (c === 0) ? 0 : -vTabs[r][c]
-                };
-                
-                const piece = new Piece(r, c, size, w/size, h/size, img, tabs);
-                pieces.push(piece);
-            }
+    // --- התיקון הקריטי: עיגול לכפולות של size ---
+    // זה מבטיח שכל pW ו-pH יהיו מספרים שלמים ללא שארית!
+    puzzleSize = {
+        w: Math.floor(targetW / size) * size,
+        h: Math.floor(targetH / size) * size
+    };
+
+    puzzleOffset = { 
+        x: Math.floor((viewWidth - puzzleSize.w) / 2), 
+        y: Math.floor((viewHeight - puzzleSize.h) / 2) 
+    };
+
+    // גודל חלק בודד (עכשיו הוא בוודאות מספר שלם)
+    const pW = puzzleSize.w / size;
+    const pH = puzzleSize.h / size;
+    
+    // יצירת הטאבים (נשאר כפי שהיה)
+    const hTabs = [];
+    const vTabs = [];
+    for (let i = 0; i <= size; i++) {
+        hTabs[i] = []; vTabs[i] = [];
+        for (let j = 0; j <= size; j++) {
+            hTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
+            vTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
         }
     }
 
+    // יצירת החלקים עם הממדים המדויקים
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            const tabs = {
+                top: (r === 0) ? 0 : hTabs[r][c],
+                right: (c === size - 1) ? 0 : vTabs[r][c + 1],
+                bottom: (r === size - 1) ? 0 : -hTabs[r + 1][c],
+                left: (c === 0) ? 0 : -vTabs[r][c]
+            };
+            
+            // שימוש ב-pW ו-pH המחושבים מראש
+            const piece = new Piece(r, c, size, pW, pH, img, tabs);
+            pieces.push(piece);
+        }
+    }
+}
     function render() {
         ctx.clearRect(0, 0, viewWidth, viewHeight);
         
