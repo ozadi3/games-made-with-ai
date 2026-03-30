@@ -2,13 +2,14 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>עולם המשחקים שלי ✨</title>
     <style>
         :root {
             --primary: #6c5ce7;
             --secondary: #a29bfe;
             --bg: #f8f9fa;
+            --accent: #fd79a8;
         }
 
         body {
@@ -20,79 +21,132 @@
             align-items: center;
             min-height: 100vh;
             color: #2d3436;
+            padding-bottom: 40px;
         }
 
         header {
-            padding: 50px 20px;
+            padding: 40px 20px;
             text-align: center;
         }
 
         h1 {
-            font-size: 3rem;
+            font-size: clamp(2rem, 8vw, 3.5rem); /* גודל פונט גמיש למובייל */
             margin-bottom: 10px;
             color: var(--primary);
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
+        header p {
+            font-size: clamp(1rem, 4vw, 1.2rem);
+            opacity: 0.8;
+        }
+
         .games-grid {
             display: grid;
+            /* התאמה אוטומטית של עמודות לפי רוחב המסך */
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
+            gap: 25px;
             width: 90%;
-            max-width: 1000px;
-            padding: 20px;
+            max-width: 1100px;
+            padding: 10px;
         }
 
         .game-card {
             background: white;
-            border-radius: 20px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-decoration: none;
             color: inherit;
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.3);
         }
 
-        .game-card:hover {
-            transform: translateY(-10px);
+        /* אפקט ריחוף (עובד גם בלחיצה ארוכה במובייל) */
+        .game-card:active, .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
 
         .game-img {
             width: 100%;
-            height: 180px;
-            background: var(--secondary);
+            height: 160px;
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 4rem;
+            font-size: 5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .game-card:hover .game-img {
+            transform: scale(1.05);
+        }
+
+        .coloring-bg {
+            background: linear-gradient(45deg, #ffeaa7, var(--accent));
         }
 
         .game-info {
-            padding: 20px;
+            padding: 24px;
             text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .game-info h2 {
-            margin: 0 0 10px 0;
+            margin: 0 0 12px 0;
             color: var(--primary);
+            font-size: 1.6rem;
+        }
+
+        .game-info p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            color: #636e72;
         }
 
         .btn-play {
             display: inline-block;
-            margin-top: 10px;
-            padding: 10px 25px;
+            padding: 12px 30px;
             background: var(--primary);
             color: white;
-            border-radius: 25px;
+            border-radius: 50px;
             font-weight: bold;
+            font-size: 1.1rem;
+            transition: background 0.3s ease;
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+        }
+
+        .game-card:hover .btn-play {
+            background: #5649c0;
         }
 
         .coming-soon {
             opacity: 0.7;
-            filter: grayscale(1);
+            filter: grayscale(0.8);
             cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* התאמות ספציפיות לאייפד/טאבלט */
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+            }
+            header { padding: 30px 15px; }
+        }
+
+        /* מניעת בחירת טקסט בזמן לחיצה על כרטיסיות (חוויית אפליקציה) */
+        .game-card {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
     </style>
 </head>
@@ -100,33 +154,39 @@
 
 <header>
     <h1>המשחקים שלי ✨</h1>
-    <p>ברוכים הבאים! בחרו משחק והתחילו ליהנות.</p>
+    <p>ברוכים הבאים לעולם המשחקים! התחילו ליהנות בלחיצת כפתור.</p>
 </header>
 
 <div class="games-grid">
     <a href="puzzle/index.html" class="game-card">
         <div class="game-img">🧩</div>
         <div class="game-info">
-            <h2>פאזל קסום</h2>
-            <p>משחק פאזל מותאם אישית עם גרירת חלקים וחיתוך חכם.</p>
+            <div>
+                <h2>פאזל קסום</h2>
+                <p>הופכים כל תמונה לפאזל מאתגר. אפשר להעלות תמונות מהגלריה או מהרשת!</p>
+            </div>
             <div class="btn-play">שחק עכשיו</div>
         </div>
     </a>
 
     <a href="coloring/index.html" class="game-card">
-        <div class="game-img">🧩</div>
+        <div class="game-img coloring-bg">🎨</div>
         <div class="game-info">
-            <h2>משחק צביעה</h2>
-            <p>משחק צביעה מותאם אישית עם כל דף שתמצאו באינטרנט</p>
+            <div>
+                <h2>עולם הצביעה</h2>
+                <p>בוחרים ציור, מפעילים את הדמיון וצובעים בכל צבעי הקשת. חוויה יצירתית לילדים.</p>
+            </div>
             <div class="btn-play">צבע עכשיו</div>
         </div>
     </a>
 
     <div class="game-card coming-soon">
-        <div class="game-img">🎮</div>
+        <div class="game-img" style="background: #dfe6e9;">🎮</div>
         <div class="game-info">
-            <h2>בקרוב...</h2>
-            <p>משחק חדש ומרגש נמצא כרגע בפיתוח.</p>
+            <div>
+                <h2>בקרוב...</h2>
+                <p>אנחנו עובדים על עוד הפתעות בשבילך. שווה לחכות!</p>
+            </div>
             <div class="btn-play">נעול</div>
         </div>
     </div>
