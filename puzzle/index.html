@@ -262,48 +262,51 @@ class Piece {
         this.tabs = tabs;
         
         this.tabSize = Math.min(pW, pH) * 0.28;
-        // שטח ביטחון ללשוניות
         this.tabBuffer = this.tabSize * 1.5;
 
-        // מיקומי המטרה מעוגלים למניעת זיוף פיקסלים
-        this.targetX = Math.round(puzzleOffset.x + (c * pW));
-        this.targetY = Math.round(puzzleOffset.y + (r * pH));
+        // Use Math.floor for target positions to align with the pixel grid
+        this.targetX = Math.floor(puzzleOffset.x + (c * pW));
+        this.targetY = Math.floor(puzzleOffset.y + (r * pH));
         
         this.resetPosition();
         this.isLocked = false;
-        this.flashAlpha = 0;
         this.groupId = `r${r}c${c}`;
     }
 
     resetPosition() {
         const padding = 40;
-        this.x = Math.round(Math.random() * (viewWidth - this.pW - padding * 2) + padding);
-        this.y = Math.round(Math.random() * (viewHeight - this.pH - padding * 2) + padding);
+        this.x = Math.floor(Math.random() * (viewWidth - this.pW - padding * 2) + padding);
+        this.y = Math.floor(Math.random() * (viewHeight - this.pH - padding * 2) + padding);
+    }
+
+    // This is the missing logic for click detection
+    contains(mx, my) {
+        return mx > this.x && mx < this.x + this.pW && my > this.y && my < this.y + this.pH;
     }
 
     draw(context, isGhost = false) {
         context.save();
         
-        // Ensure we are working with whole numbers to prevent sub-pixel blurring
+        // Critical for Retina: force whole numbers for drawing
         const posX = Math.floor(isGhost ? this.targetX : this.x);
         const posY = Math.floor(isGhost ? this.targetY : this.y);
 
+        context.translate(posX, posY);
+        context.beginPath();
+        this.createPath(context);
+
         if (isGhost) {
-            context.translate(posX, posY);
-            context.beginPath();
-            this.createPath(context);
             context.strokeStyle = "rgba(0,0,0,0.15)";
             context.lineWidth = 1;
             context.stroke();
+            context.fillStyle = "rgba(0,0,0,0.05)";
+            context.fill();
             context.restore();
             return;
         }
 
-        // Draw the image piece
-        context.translate(posX, posY);
-        context.beginPath();
-        this.createPath(context);
-        context.clip(); 
+        // Clip the image to the puzzle shape
+        context.clip();
 
         const sw = this.img.width / this.size;
         const sh = this.img.height / this.size;
@@ -315,27 +318,24 @@ class Piece {
         const sBX = (bX / this.pW) * sw;
         const sBY = (bY / this.pH) * sh;
 
-        // Draw the image slightly larger than the clip to ensure full coverage
+        // Draw the image slightly over-sized (+1px) to prevent edge bleeding gaps
         context.drawImage(
             this.img,
             sx - sBX, sy - sBY, 
             sw + sBX * 2, sh + sBY * 2,
             -bX, -bY, 
-            this.pW + bX * 2, this.pH + bY * 2
+            this.pW + bX * 2 + 1, this.pH + bY * 2 + 1
         );
 
         context.restore();
 
-        // Stroke the piece to hide any tiny gaps caused by the clipping anti-aliasing
+        // Optional: A very faint stroke to "clean" the anti-aliased edge
         context.save();
         context.translate(posX, posY);
         context.beginPath();
         this.createPath(context);
-        
-        // Use a very thin stroke the same color as the image edge (or subtle white/black)
-        // This acts as a "seal" for the pixels.
-        context.strokeStyle = this.isLocked ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.3)";
-        context.lineWidth = 0.5; 
+        context.strokeStyle = this.isLocked ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.4)";
+        context.lineWidth = 0.8; 
         context.stroke();
         context.restore();
     }
@@ -343,35 +343,32 @@ class Piece {
     createPath(ctx) {
         const { pW, pH, tabSize, tabs } = this; 
         const s = tabSize;
-        // Inset by a tiny fraction of a pixel (0.2) to prevent edge bleeding
-        const inset = 0.2;
-        
-        ctx.moveTo(inset, inset);
+        // Inset by 0.1px to ensure the clip stays inside the neighbor's edge
+        const i = 0.1;
+
+        ctx.moveTo(i, i);
         if (tabs.top !== 0) { 
-            ctx.lineTo(pW*0.35, inset); 
-            ctx.bezierCurveTo(pW*0.35, -s*tabs.top, pW*0.65, -s*tabs.top, pW*0.65, inset); 
+            ctx.lineTo(pW * 0.35, i); 
+            ctx.bezierCurveTo(pW * 0.35, -s * tabs.top, pW * 0.65, -s * tabs.top, pW * 0.65, i); 
         }
-        ctx.lineTo(pW - inset, inset);
+        ctx.lineTo(pW - i, i);
         if (tabs.right !== 0) { 
-            ctx.lineTo(pW - inset, pH*0.35); 
-            ctx.bezierCurveTo(pW+s*tabs.right, pH*0.35, pW+s*tabs.right, pH*0.65, pW - inset, pH*0.65); 
+            ctx.lineTo(pW - i, pH * 0.35); 
+            ctx.bezierCurveTo(pW + s * tabs.right, pH * 0.35, pW + s * tabs.right, pH * 0.65, pW - i, pH * 0.65); 
         }
-        ctx.lineTo(pW - inset, pH - inset);
+        ctx.lineTo(pW - i, pH - i);
         if (tabs.bottom !== 0) { 
-            ctx.lineTo(pW*0.65, pH - inset); 
-            ctx.bezierCurveTo(pW*0.65, pH+s*tabs.bottom, pW*0.35, pH+s*tabs.bottom, pW*0.35, pH - inset); 
+            ctx.lineTo(pW * 0.65, pH - i); 
+            ctx.bezierCurveTo(pW * 0.65, pH + s * tabs.bottom, pW * 0.35, pH + s * tabs.bottom, pW * 0.35, pH - i); 
         }
-        ctx.lineTo(inset, pH - inset);
+        ctx.lineTo(i, pH - i);
         if (tabs.left !== 0) { 
-            ctx.lineTo(inset, pH*0.65); 
-            ctx.bezierCurveTo(-s*tabs.left, pH*0.65, -s*tabs.left, pH*0.35, inset, pH*0.35); 
+            ctx.lineTo(i, pH * 0.65); 
+            ctx.bezierCurveTo(-s * tabs.left, pH * 0.65, -s * tabs.left, pH * 0.35, i, pH * 0.35); 
         }
         ctx.closePath();
     }
-
-    contains(mx, my) { return mx > this.x && mx < this.x + this.pW && my > this.y && my < this.y + this.pH; }
 }
-
 function initGame() {
     if (!img.src) return;
     pieces = [];
