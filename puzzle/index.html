@@ -392,63 +392,52 @@
     }
 
     draw(context, isGhost = false) {
-        context.save();
-        
-        const posX = Math.floor(isGhost ? this.targetX : this.x);
-        const posY = Math.floor(isGhost ? this.targetY : this.y);
+    context.save();
+    
+    // מיקום החלק על המסך (מעוגל למניעת טשטוש)
+    const posX = Math.floor(isGhost ? this.targetX : this.x);
+    const posY = Math.floor(isGhost ? this.targetY : this.y);
 
-        context.translate(posX, posY);
-        
-        context.beginPath();
-        this.createPath(context);
+    context.translate(posX, posY);
+    context.beginPath();
+    this.createPath(context);
 
-        if (isGhost) {
-            context.strokeStyle = "rgba(0,0,0,0.1)";
-            context.lineWidth = 1;
-            context.stroke();
-            context.fillStyle = "rgba(0,0,0,0.05)";
-            context.fill();
-            context.restore();
-            return;
-        }
-
-        context.clip();
-
-        // --- התיקון הקריטי כאן: חישוב יחס התמונה המקורית ---
-        const sW = this.img.width / this.size;
-        const sH = this.img.height / this.size;
-        
-        const sx = this.c * sW;
-        const sy = this.r * sH;
-        
-        // חישוב הבאפר בערכי התמונה המקורית (Source)
-        const sTabW = (this.tabBuffer / this.pW) * sW;
-        const sTabH = (this.tabBuffer / this.pH) * sH;
-
-        context.drawImage(
-            this.img,
-            sx - sTabW, 
-            sy - sTabH, 
-            sW + (sTabW * 2), 
-            sH + (sTabH * 2),
-            -this.tabBuffer, 
-            -this.tabBuffer, 
-            this.pW + (this.tabBuffer * 2), 
-            this.pH + (this.tabBuffer * 2)
-        );
-
-        context.restore();
-
-        context.save();
-        context.translate(posX, posY);
-        context.beginPath();
-        this.createPath(context);
+    if (isGhost) {
         context.strokeStyle = "rgba(0,0,0,0.1)";
-        context.lineWidth = 0.5;
+        context.lineWidth = 1;
         context.stroke();
+        context.fillStyle = "rgba(0,0,0,0.05)";
+        context.fill();
         context.restore();
+        return;
     }
 
+    context.clip();
+
+    // חישוב יחס התמונה המקורית לחלק הפאזל
+    // sW ו-sH הם הגדלים של החלק בתוך הקובץ המקורי (למשל 4000px רוחב)
+    const sW = img.naturalWidth / this.size;
+    const sH = img.naturalHeight / this.size;
+    
+    const sx = this.c * sW;
+    const sy = this.r * sH;
+    
+    // חישוב הבאפר (השטח של ה"לשוניות") בתוך קובץ המקור
+    const sTabW = (this.tabBuffer / this.pW) * sW;
+    const sTabH = (this.tabBuffer / this.pH) * sH;
+
+    // פקודת הציור הקריטית
+    context.drawImage(
+        img,
+        sx - sTabW, sy - sTabH,      // מקור: איפה בתמונה המקורית לחתוך
+        sW + (sTabW * 2), sH + (sTabH * 2), // גודל החיתוך בתמונה המקורית
+        -this.tabBuffer, -this.tabBuffer,   // יעד: איפה לצייר יחסית ל-Piece
+        this.pW + (this.tabBuffer * 2),     // גודל הציור על המסך
+        this.pH + (this.tabBuffer * 2)
+    );
+
+    context.restore();
+}
     createPath(ctx) {
         const w = this.pW;
         const h = this.pH;
@@ -861,25 +850,25 @@
     }
 
     function resize() {
-        dpr = window.devicePixelRatio || 1;
-        viewWidth = window.innerWidth;
-        viewHeight = window.innerHeight;
-        
-        // הגדרת הגודל הפיזי של הקנבס
-        canvas.width = viewWidth * dpr;
-        canvas.height = viewHeight * dpr;
-        
-        // הגדרת גודל התצוגה (CSS)
-        canvas.style.width = viewWidth + 'px';
-        canvas.style.height = viewHeight + 'px';
-        
-        // איפוס הטרנספורמציה וקנה המידה
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.scale(dpr, dpr);
-        
-        // אתחול מחדש רק אם אין משחק פעיל (כדי לא להרוס באמצע)
-        if (img.src && pieces.length === 0) initGame();
-    }
+    dpr = window.devicePixelRatio || 1;
+    viewWidth = window.innerWidth;
+    viewHeight = window.innerHeight;
+    
+    // הגדרת גודל פיזי (כמות הפיקסלים האמיתית במסך)
+    canvas.width = viewWidth * dpr;
+    canvas.height = viewHeight * dpr;
+    
+    // הגדרת גודל תצוגה (מה שהדפדפן חושב)
+    canvas.style.width = viewWidth + 'px';
+    canvas.style.height = viewHeight + 'px';
+    
+    // אומרים לקנבס לעבוד ביחידות לוגיות (כדי ש-100px בקוד יהיו 100px במסך)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    
+    // אם כבר התחלנו משחק, אנחנו חייבים לאתחל את המיקומים מחדש 
+    // כי ה-viewWidth השתנה (למשל בסיבוב האייפד)
+    if (img.src) initGame();
+}
 
     // --- אתחול ---
     window.addEventListener('resize', resize);
