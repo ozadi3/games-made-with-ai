@@ -2,8 +2,15 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <link rel="manifest" href="manifest.json">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kids Games">
+
+    <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>עולם המשחקים שלי ✨</title>
+    <title>Kids Games ✨</title>
     <style>
         :root {
             --primary: #6c5ce7;
@@ -22,6 +29,8 @@
             min-height: 100vh;
             color: #2d3436;
             padding-bottom: 40px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         header {
