@@ -360,7 +360,8 @@
         }
     }
 
-    class Piece {
+ // --- החלף את כל מחלקת Piece בקוד הזה ---
+class Piece {
     constructor(r, c, size, pW, pH, img, tabs) {
         this.r = r;
         this.c = c;
@@ -373,8 +374,9 @@
         this.tabSize = Math.floor(Math.min(pW, pH) * 0.28);
         this.tabBuffer = this.tabSize * 2;
 
-        this.targetX = Math.floor(puzzleOffset.x + (c * pW));
-        this.targetY = Math.floor(puzzleOffset.y + (r * pH));
+        // נקודות יעד מעוגלות למניעת זליגת פיקסלים
+        this.targetX = Math.round(puzzleOffset.x + (c * pW));
+        this.targetY = Math.round(puzzleOffset.y + (r * pH));
         
         this.resetPosition();
         this.isLocked = false;
@@ -392,70 +394,66 @@
     }
 
     draw(context, isGhost = false) {
-    context.save();
-    
-    // 1. שימוש ב-Math.floor כדי למנוע sub-pixel rendering (הגורם העיקרי לטשטוש באייפד)
-    const posX = Math.floor(isGhost ? this.targetX : this.x);
-    const posY = Math.floor(isGhost ? this.targetY : this.y);
+        context.save();
+        
+        const posX = isGhost ? this.targetX : this.x;
+        const posY = isGhost ? this.targetY : this.y;
 
-    context.translate(posX, posY);
-    
-    // 2. יצירת הנתיב (Path) של הלשוניות
-    context.beginPath();
-    this.createPath(context);
+        // שימוש ב-Translate נקי
+        context.translate(posX, posY);
+        
+        context.beginPath();
+        this.createPath(context);
 
-    if (isGhost) {
-        // ציור הצללית (המיקום המיועד בלוח)
-        context.strokeStyle = "rgba(0,0,0,0.1)";
-        context.lineWidth = 1;
-        context.stroke();
-        context.fillStyle = "rgba(0,0,0,0.05)";
-        context.fill();
+        if (isGhost) {
+            context.strokeStyle = "rgba(0,0,0,0.1)";
+            context.lineWidth = 1;
+            context.stroke();
+            context.fillStyle = "rgba(0,0,0,0.05)";
+            context.fill();
+            context.restore();
+            return;
+        }
+
+        context.clip();
+
+        // --- התיקון לצפיפות פיקסלים גבוהה (High DPI Fix) ---
+        // מחשבים את היחס האמיתי בין קובץ המקור לגודל על המסך
+        const sW = this.img.naturalWidth / this.size;
+        const sH = this.img.naturalHeight / this.size;
+        
+        const sx = this.c * sW;
+        const sy = this.r * sH;
+        
+        // הבאפר חייב להיות מחושב לפי היחס שבין התצוגה למקור
+        const sTabW = (this.tabBuffer / this.pW) * sW;
+        const sTabH = (this.tabBuffer / this.pH) * sH;
+
+        context.drawImage(
+            this.img,
+            sx - sTabW, 
+            sy - sTabH, 
+            sW + (sTabW * 2), 
+            sH + (sTabH * 2),
+            -this.tabBuffer, 
+            -this.tabBuffer, 
+            this.pW + (this.tabBuffer * 2), 
+            this.pH + (this.tabBuffer * 2)
+        );
+
         context.restore();
-        return;
+
+        // מסגרת עדינה למניעת "רווחים" לבנים בין חלקים בגלל ה-DPR
+        context.save();
+        context.translate(posX, posY);
+        context.beginPath();
+        this.createPath(context);
+        context.strokeStyle = "rgba(0,0,0,0.1)";
+        context.lineWidth = 0.5;
+        context.stroke();
+        context.restore();
     }
 
-    // 3. חיתוך לפי הלשוניות
-    context.clip();
-
-    // 4. חישוב מדויק של מקור התמונה (Source)
-    // שימוש ב-naturalWidth מבטיח רזולוציה מקורית
-    const sW = this.img.naturalWidth / this.size;
-    const sH = this.img.naturalHeight / this.size;
-    
-    const sx = this.c * sW;
-    const sy = this.r * sH;
-    
-    // חישוב הבאפר של הלשוניות במונחי פיקסלים של תמונת המקור
-    const sTabW = (this.tabBuffer / this.pW) * sW;
-    const sTabH = (this.tabBuffer / this.pH) * sH;
-
-    // 5. הציור עצמו - המיפוי בין הקובץ המקורי למסך
-    context.drawImage(
-        this.img,
-        sx - sTabW, 
-        sy - sTabH, 
-        sW + (sTabW * 2), 
-        sH + (sTabH * 2),
-        -this.tabBuffer, 
-        -this.tabBuffer, 
-        this.pW + (this.tabBuffer * 2), 
-        this.pH + (this.tabBuffer * 2)
-    );
-
-    context.restore();
-
-    // 6. החלק שנוטה להישמט: מסגרת עדינה מאוד מסביב לחלק
-    // זה עוזר להסתיר "חורים" של פיקסל אחד שנוצרים בגלל עיגול מספרים
-    context.save();
-    context.translate(posX, posY);
-    context.beginPath();
-    this.createPath(context);
-    context.strokeStyle = "rgba(0,0,0,0.08)"; // מסגרת כמעט שקופה
-    context.lineWidth = 0.5;
-    context.stroke();
-    context.restore();
-}
     createPath(ctx) {
         const w = this.pW;
         const h = this.pH;
@@ -485,6 +483,8 @@
         ctx.closePath();
     }
 }
+
+// --- עדכון פונקציית ה-resize ---
 
     function initGame() {
         if (!img.src) return;
@@ -728,25 +728,23 @@
     }
 
     function resize() {
-    dpr = window.devicePixelRatio || 1;
-    viewWidth = window.innerWidth;
-    viewHeight = window.innerHeight;
-    
-    // הגדרת גודל פיזי (כמות הפיקסלים האמיתית במסך)
-    canvas.width = viewWidth * dpr;
-    canvas.height = viewHeight * dpr;
-    
-    // הגדרת גודל תצוגה (מה שהדפדפן חושב)
-    canvas.style.width = viewWidth + 'px';
-    canvas.style.height = viewHeight + 'px';
-    
-    // אומרים לקנבס לעבוד ביחידות לוגיות (כדי ש-100px בקוד יהיו 100px במסך)
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    
-    // אם כבר התחלנו משחק, אנחנו חייבים לאתחל את המיקומים מחדש 
-    // כי ה-viewWidth השתנה (למשל בסיבוב האייפד)
-    if (img.src) initGame();
-}
+        dpr = window.devicePixelRatio || 1;
+        viewWidth = window.innerWidth;
+        viewHeight = window.innerHeight;
+        
+        // הגדרת גודל פיזי מלא
+        canvas.width = viewWidth * dpr;
+        canvas.height = viewHeight * dpr;
+        
+        canvas.style.width = viewWidth + 'px';
+        canvas.style.height = viewHeight + 'px';
+        
+        // חשוב: אנחנו עושים Scale לכל הקנבס פעם אחת כאן
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        
+        // מניעת לולאה: מאתחלים משחק רק אם אין חלקים (או שהתמונה השתנתה)
+        if (img.src && pieces.length === 0) initGame();
+    }
 
     // --- אתחול ---
     window.addEventListener('resize', resize);
