@@ -284,78 +284,88 @@ class Piece {
     draw(context, isGhost = false) {
         context.save();
         
-        // עיגול מיקומים - קריטי למניעת כפילויות באייפד
-        const posX = Math.round(isGhost ? this.targetX : this.x);
-        const posY = Math.round(isGhost ? this.targetY : this.y);
+        // Ensure we are working with whole numbers to prevent sub-pixel blurring
+        const posX = Math.floor(isGhost ? this.targetX : this.x);
+        const posY = Math.floor(isGhost ? this.targetY : this.y);
 
         if (isGhost) {
             context.translate(posX, posY);
             context.beginPath();
             this.createPath(context);
-            context.strokeStyle = "rgba(0,0,0,0.2)";
+            context.strokeStyle = "rgba(0,0,0,0.15)";
             context.lineWidth = 1;
             context.stroke();
-            context.fillStyle = "rgba(0,0,0,0.05)";
-            context.fill();
             context.restore();
             return;
         }
 
-        // צל רק לחלק שנגרר
-        if (selectedPiece && selectedPiece.groupId === this.groupId) {
-            context.shadowColor = "rgba(0,0,0,0.3)";
-            context.shadowBlur = 10;
-        }
-
+        // Draw the image piece
         context.translate(posX, posY);
         context.beginPath();
         this.createPath(context);
-        context.clip(); // חיתוך הצורה המדויקת של הפאזל
+        context.clip(); 
 
         const sw = this.img.width / this.size;
         const sh = this.img.height / this.size;
         const sx = this.c * sw;
         const sy = this.r * sh;
         
-        // חישוב יחס ה-Buffer
         const bX = this.tabBuffer;
         const bY = this.tabBuffer;
         const sBX = (bX / this.pW) * sw;
         const sBY = (bY / this.pH) * sh;
 
-        // ציור התמונה עם Math.round על כל הפרמטרים
+        // Draw the image slightly larger than the clip to ensure full coverage
         context.drawImage(
             this.img,
-            Math.round(sx - sBX), Math.round(sy - sBY), 
-            Math.round(sw + sBX * 2), Math.round(sh + sBY * 2),
-            Math.round(-bX), Math.round(-bY), 
-            Math.round(this.pW + bX * 2), Math.round(this.pH + bY * 2)
+            sx - sBX, sy - sBY, 
+            sw + sBX * 2, sh + sBY * 2,
+            -bX, -bY, 
+            this.pW + bX * 2, this.pH + bY * 2
         );
 
-        // סגירת הקצוות עם Stroke למניעת קווים לבנים
         context.restore();
+
+        // Stroke the piece to hide any tiny gaps caused by the clipping anti-aliasing
         context.save();
         context.translate(posX, posY);
         context.beginPath();
         this.createPath(context);
-        context.strokeStyle = this.isLocked ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.5)";
-        context.lineWidth = 1.2;
+        
+        // Use a very thin stroke the same color as the image edge (or subtle white/black)
+        // This acts as a "seal" for the pixels.
+        context.strokeStyle = this.isLocked ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.3)";
+        context.lineWidth = 0.5; 
         context.stroke();
-
         context.restore();
     }
 
     createPath(ctx) {
         const { pW, pH, tabSize, tabs } = this; 
         const s = tabSize;
-        ctx.moveTo(0, 0);
-        if (tabs.top !== 0) { ctx.lineTo(pW*0.35, 0); ctx.bezierCurveTo(pW*0.35, -s*tabs.top, pW*0.65, -s*tabs.top, pW*0.65, 0); }
-        ctx.lineTo(pW, 0);
-        if (tabs.right !== 0) { ctx.lineTo(pW, pH*0.35); ctx.bezierCurveTo(pW+s*tabs.right, pH*0.35, pW+s*tabs.right, pH*0.65, pW, pH*0.65); }
-        ctx.lineTo(pW, pH);
-        if (tabs.bottom !== 0) { ctx.lineTo(pW*0.65, pH); ctx.bezierCurveTo(pW*0.65, pH+s*tabs.bottom, pW*0.35, pH+s*tabs.bottom, pW*0.35, pH); }
-        ctx.lineTo(0, pH);
-        if (tabs.left !== 0) { ctx.lineTo(0, pH*0.65); ctx.bezierCurveTo(-s*tabs.left, pH*0.65, -s*tabs.left, pH*0.35, 0, pH*0.35); }
+        // Inset by a tiny fraction of a pixel (0.2) to prevent edge bleeding
+        const inset = 0.2;
+        
+        ctx.moveTo(inset, inset);
+        if (tabs.top !== 0) { 
+            ctx.lineTo(pW*0.35, inset); 
+            ctx.bezierCurveTo(pW*0.35, -s*tabs.top, pW*0.65, -s*tabs.top, pW*0.65, inset); 
+        }
+        ctx.lineTo(pW - inset, inset);
+        if (tabs.right !== 0) { 
+            ctx.lineTo(pW - inset, pH*0.35); 
+            ctx.bezierCurveTo(pW+s*tabs.right, pH*0.35, pW+s*tabs.right, pH*0.65, pW - inset, pH*0.65); 
+        }
+        ctx.lineTo(pW - inset, pH - inset);
+        if (tabs.bottom !== 0) { 
+            ctx.lineTo(pW*0.65, pH - inset); 
+            ctx.bezierCurveTo(pW*0.65, pH+s*tabs.bottom, pW*0.35, pH+s*tabs.bottom, pW*0.35, pH - inset); 
+        }
+        ctx.lineTo(inset, pH - inset);
+        if (tabs.left !== 0) { 
+            ctx.lineTo(inset, pH*0.65); 
+            ctx.bezierCurveTo(-s*tabs.left, pH*0.65, -s*tabs.left, pH*0.35, inset, pH*0.35); 
+        }
         ctx.closePath();
     }
 
