@@ -99,10 +99,49 @@
             text-align: center; line-height: 28px; cursor: pointer; font-weight: bold;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
+
+        .home-button {
+    position: fixed;
+    top: 20px;
+    left: 20px; /* בצד הנגדי לכפתור התפריט */
+    z-index: 1001;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--primary);
+    text-decoration: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid var(--primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.home-button:hover {
+    transform: scale(1.1);
+    background: var(--primary);
+    color: white;
+}
+
+/* התאמה למובייל - שלא יתנגש עם אלמנטים אחרים */
+@media (max-width: 600px) {
+    .home-button {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        top: 15px;
+        left: 15px;
+    }
+}
     </style>
 </head>
 <body>
-
+<a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
 <audio id="snapSound" src="snap.mp3" preload="auto"></audio>
 <audio id="winSound" src="success.mp3" preload="auto"></audio>
 

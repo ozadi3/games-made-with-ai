@@ -79,10 +79,48 @@
         .grid-item { width: 100%; aspect-ratio: 1; object-fit: contain; border: 2px solid #eee; border-radius: 15px; cursor: pointer; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 290; backdrop-filter: blur(2px); }
         .loader { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px 40px; border-radius: 30px; z-index: 400; font-weight: bold; }
+        .home-button {
+    position: fixed;
+    top: 20px;
+    left: 20px; /* בצד הנגדי לכפתור התפריט */
+    z-index: 1001;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--primary);
+    text-decoration: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid var(--primary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.home-button:hover {
+    transform: scale(1.1);
+    background: var(--primary);
+    color: white;
+}
+
+/* התאמה למובייל - שלא יתנגש עם אלמנטים אחרים */
+@media (max-width: 600px) {
+    .home-button {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+        top: 15px;
+        left: 15px;
+    }
+}
     </style>
 </head>
 <body>
-
+    <a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
     <div id="loader" class="loader">טוען... ✨</div>
     <div id="modalOverlay" class="modal-overlay" onclick="closeAllModals()"></div>
 
