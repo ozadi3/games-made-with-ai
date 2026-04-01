@@ -360,7 +360,7 @@
         }
     }
 
-    class Piece {
+class Piece {
     constructor(r, c, size, pW, pH, img, tabs) {
         this.r = r;
         this.c = c;
@@ -370,9 +370,12 @@
         this.img = img;
         this.tabs = tabs;
         
+        // גודל לשונית יחסי לגודל החתיכה על המסך
         this.tabSize = Math.floor(Math.min(pW, pH) * 0.28);
-        this.tabBuffer = this.tabSize * 2;
+        // באפר מספיק גדול כדי להכיל את הלשוניות בציור
+        this.tabBuffer = this.tabSize * 1.5;
 
+        // מיקום היעד על הקנבס (מעוגל כדי למנוע טשטוש/זליגה)
         this.targetX = Math.floor(puzzleOffset.x + (c * pW));
         this.targetY = Math.floor(puzzleOffset.y + (r * pH));
         
@@ -382,95 +385,123 @@
     }
 
     resetPosition() {
-        const padding = 40;
-        this.x = Math.floor(Math.random() * (viewWidth - this.pW - padding * 2) + padding);
-        this.y = Math.floor(Math.random() * (viewHeight - this.pH - padding * 2) + padding);
+    const padding = 20; // מרווח מהקצוות
+    const puzzleLeft = puzzleOffset.x;
+    const puzzleRight = puzzleOffset.x + puzzleSize.w;
+    
+    // נחליט באקראי אם להניח את החלק בצד שמאל או בצד ימין של הלוח
+    if (Math.random() > 0.5) {
+        // צד שמאל של הלוח
+        this.x = Math.floor(Math.random() * (puzzleLeft - this.pW - padding) + padding);
+    } else {
+        // צד ימין של הלוח
+        const startX = puzzleRight + padding;
+        const availableWidth = viewWidth - puzzleRight - this.pW - padding;
+        this.x = Math.floor(Math.random() * availableWidth + startX);
     }
+
+    // הגרלת גובה אקראי לכל אורך המסך
+    this.y = Math.floor(Math.random() * (viewHeight - this.pH - padding * 2) + padding);
+
+    // הגנה למקרה שהמסך צר מדי (כמו בטלפון במצב לאורך) והחלקים "בורחים"
+    if (this.x < 0 || this.x > viewWidth - this.pW) {
+        this.x = Math.floor(Math.random() * (viewWidth - this.pW));
+    }
+}
 
     contains(mx, my) {
         return mx > this.x && mx < this.x + this.pW && my > this.y && my < this.y + this.pH;
     }
 
     draw(context, isGhost = false) {
-    context.save();
-    
-    const posX = Math.floor(isGhost ? this.targetX : this.x);
-    const posY = Math.floor(isGhost ? this.targetY : this.y);
+        context.save();
+        
+        const posX = Math.floor(isGhost ? this.targetX : this.x);
+        const posY = Math.floor(isGhost ? this.targetY : this.y);
 
-    context.translate(posX, posY);
-    
-    context.beginPath();
-    this.createPath(context);
+        context.translate(posX, posY);
+        
+        context.beginPath();
+        this.createPath(context);
 
-    if (isGhost) {
-        context.strokeStyle = "rgba(0,0,0,0.1)";
-        context.lineWidth = 1;
-        context.stroke();
-        context.fillStyle = "rgba(0,0,0,0.05)";
-        context.fill();
+        if (isGhost) {
+            context.strokeStyle = "rgba(0,0,0,0.1)";
+            context.lineWidth = 1;
+            context.stroke();
+            context.fillStyle = "rgba(0,0,0,0.05)";
+            context.fill();
+            context.restore();
+            return;
+        }
+
+        context.clip();
+
+        // --- חישוב מקור התמונה (Source) בדיוק גבוה ---
+        
+        // 1. חישוב גודל חתיכה אחת בפיקסלים של התמונה המקורית
+        const sw = this.img.width / this.size;
+        const sh = this.img.height / this.size;
+        
+        // 2. מיקום הפינה של החתיכה בתמונה המקורית
+        const sx = this.c * sw;
+        const sy = this.r * sh;
+        
+        // 3. חישוב כמה "באפר" לקחת מהתמונה המקורית עבור הלשוניות
+        // היחס בין הפיקסלים על המסך לפיקסלים בתמונה:
+        const ratioX = sw / this.pW;
+        const ratioY = sh / this.pH;
+        
+        const sBufferX = this.tabBuffer * ratioX;
+        const sBufferY = this.tabBuffer * ratioY;
+
+        // הציור משתמש בערכים שלמים במידת האפשר כדי למנוע זליגות באייפד
+        context.drawImage(
+            this.img,
+            sx - sBufferX, 
+            sy - sBufferY, 
+            sw + (sBufferX * 2), 
+            sh + (sBufferY * 2),
+            -this.tabBuffer, 
+            -this.tabBuffer, 
+            this.pW + (this.tabBuffer * 2), 
+            this.pH + (this.tabBuffer * 2)
+        );
+
         context.restore();
-        return;
     }
 
-    context.clip();
-
-    // --- התיקון המרכזי למניעת כפילות (Overlap) ---
-    
-    // 1. חישוב מדויק של גודל חתיכה אחת בתמונה המקורית (ללא לשוניות)
-    const sW = this.img.width / this.size;
-    const sH = this.img.height / this.size;
-    
-    // 2. מיקום הפינה השמאלית העליונה של החתיכה בתמונה (ללא לשוניות)
-    const sx = this.c * sW;
-    const sy = this.r * sH;
-    
-    // 3. כמה "תמונה אקסטרה" אנחנו צריכים בשביל הלשוניות?
-    // אנחנו מחשבים את היחס בין גודל הלשונית בפיקסלים על המסך לגודל החתיכה על המסך
-    const ratioW = sW / this.pW;
-    const ratioH = sH / this.pH;
-    
-    const sTabW = this.tabBuffer * ratioW;
-    const sTabH = this.tabBuffer * ratioH;
-
-    // הציור:
-    // אנחנו לוקחים מהתמונה את (החתיכה + האקסטרה של הלשוניות)
-    // ומציירים אותה על המסך ב-(מיקום החתיכה פחות ה-buffer של הלשוניות)
-    context.drawImage(
-        this.img,
-        sx - sTabW,               // מקור X (כולל חריגה ללשונית)
-        sy - sTabH,               // מקור Y (כולל חריגה ללשונית)
-        sW + (sTabW * 2),         // רוחב מקור (חתיכה + 2 לשוניות)
-        sH + (sTabH * 2),         // גובה מקור (חתיכה + 2 לשוניות)
-        -this.tabBuffer,          // יעד X על הקנבס (ביחס ל-translate)
-        -this.tabBuffer,          // יעד Y על הקנבס
-        this.pW + (this.tabBuffer * 2), // רוחב יעד
-        this.pH + (this.tabBuffer * 2)  // גובה יעד
-    );
-
-    context.restore();
-}
     createPath(ctx) {
         const w = this.pW;
         const h = this.pH;
         const s = this.tabSize;
         const t = this.tabs;
 
+        // שימוש ב-lineJoin עגול עוזר להחליק פינות במעברים בין חלקים
+        ctx.lineJoin = "round";
         ctx.moveTo(0, 0);
+        
+        // Top
         if (t.top !== 0) {
             ctx.lineTo(w * 0.35, 0);
             ctx.bezierCurveTo(w * 0.35, -s * t.top, w * 0.65, -s * t.top, w * 0.65, 0);
         }
         ctx.lineTo(w, 0);
+        
+        // Right
         if (t.right !== 0) {
             ctx.lineTo(w, h * 0.35);
             ctx.bezierCurveTo(w + s * t.right, h * 0.35, w + s * t.right, h * 0.65, w, h * 0.65);
         }
         ctx.lineTo(w, h);
+        
+        // Bottom
         if (t.bottom !== 0) {
             ctx.lineTo(w * 0.65, h);
             ctx.bezierCurveTo(w * 0.65, h + s * t.bottom, w * 0.35, h + s * t.bottom, w * 0.35, h);
         }
         ctx.lineTo(0, h);
+        
+        // Left
         if (t.left !== 0) {
             ctx.lineTo(0, h * 0.65);
             ctx.bezierCurveTo(-s * t.left, h * 0.65, -s * t.left, h * 0.35, 0, h * 0.35);
@@ -479,195 +510,98 @@
     }
 }
 
-//     constructor(r, c, size, pW, pH, img, tabs) {
-//         this.r = r;
-//         this.c = c;
-//         this.size = size;
-//         this.pW = pW;
-//         this.pH = pH;
-//         this.img = img;
-//         this.tabs = tabs;
-        
-//         this.tabSize = Math.floor(Math.min(pW, pH) * 0.28);
-//         this.tabBuffer = this.tabSize * 2; // Increased buffer for safety
-
-//         // Use Math.floor to ensure we start on a clean physical pixel boundary
-//         this.targetX = Math.floor(puzzleOffset.x + (c * pW));
-//         this.targetY = Math.floor(puzzleOffset.y + (r * pH));
-        
-//         this.resetPosition();
-//         this.isLocked = false;
-//         this.groupId = 'r' + r + 'c' + c;
-//     }
-
-//     resetPosition() {
-//         const padding = 40;
-//         // Ensure random positions are also integer-based
-//         this.x = Math.floor(Math.random() * (viewWidth - this.pW - padding * 2) + padding);
-//         this.y = Math.floor(Math.random() * (viewHeight - this.pH - padding * 2) + padding);
-//     }
-
-//     contains(mx, my) {
-//         return mx > this.x && mx < this.x + this.pW && my > this.y && my < this.y + this.pH;
-//     }
-
-//     draw(context, isGhost = false) {
-//         context.save();
-        
-//         // CRITICAL: Floor the position to prevent sub-pixel rendering overlap
-//         const posX = Math.floor(isGhost ? this.targetX : this.x);
-//         const posY = Math.floor(isGhost ? this.targetY : this.y);
-
-//         context.translate(posX, posY);
-        
-//         // 1. Create the clipping path
-//         context.beginPath();
-//         this.createPath(context);
-
-//         if (isGhost) {
-//             context.strokeStyle = "rgba(0,0,0,0.1)";
-//             context.lineWidth = 1;
-//             context.stroke();
-//             context.fillStyle = "rgba(0,0,0,0.05)";
-//             context.fill();
-//             context.restore();
-//             return;
-//         }
-
-//         // 2. Clip the context. 
-//         // We use "evenodd" or default to ensure the path is closed perfectly.
-//         context.clip();
-
-//         // 3. IMAGE MAPPING (The Math Fix)
-//         // We calculate the exact ratio of the image to the piece
-//         const imgW = this.img.width;
-//         const imgH = this.img.height;
-        
-//         // Calculate the source dimensions for ONE piece (no tabs)
-//         const sW = imgW / this.size;
-//         const sH = imgH / this.size;
-        
-//         // Calculate the source top-left (no tabs)
-//         const sx = this.c * sW;
-//         const sy = this.r * sH;
-        
-//         // Calculate how much "extra" image we need for the tabs in image-pixels
-//         const sTabW = (this.tabBuffer / this.pW) * sW;
-//         const sTabH = (this.tabBuffer / this.pH) * sH;
-
-//         // DRAWING COMMAND:
-//         // Source: The piece area + the buffer area
-//         // Destination: Offset by -buffer, sized to piece + buffer*2
-//         // We use 0 (zero) extra padding here to prevent overlap.
-//         context.drawImage(
-//             this.img,
-//             sx - sTabW, 
-//             sy - sTabH, 
-//             sW + (sTabW * 2), 
-//             sH + (sTabH * 2),
-//             -this.tabBuffer, 
-//             -this.tabBuffer, 
-//             this.pW + (this.tabBuffer * 2), 
-//             this.pH + (this.tabBuffer * 2)
-//         );
-
-//         context.restore();
-
-//         // Optional: Very faint stroke to hide any tiny pixel-edge artifacts
-//         context.save();
-//         context.translate(posX, posY);
-//         context.beginPath();
-//         this.createPath(context);
-//         context.strokeStyle = "rgba(0,0,0,0.05)";
-//         context.lineWidth = 0.5;
-//         context.stroke();
-//         context.restore();
-//     }
-
-//     createPath(ctx) {
-//         // Use local constants to ensure no external interference
-//         const w = this.pW;
-//         const h = this.pH;
-//         const s = this.tabSize;
-//         const t = this.tabs;
-
-//         ctx.moveTo(0, 0);
-        
-//         // Top edge
-//         if (t.top !== 0) {
-//             ctx.lineTo(w * 0.35, 0);
-//             ctx.bezierCurveTo(w * 0.35, -s * t.top, w * 0.65, -s * t.top, w * 0.65, 0);
-//         }
-//         ctx.lineTo(w, 0);
-
-//         // Right edge
-//         if (t.right !== 0) {
-//             ctx.lineTo(w, h * 0.35);
-//             ctx.bezierCurveTo(w + s * t.right, h * 0.35, w + s * t.right, h * 0.65, w, h * 0.65);
-//         }
-//         ctx.lineTo(w, h);
-
-//         // Bottom edge
-//         if (t.bottom !== 0) {
-//             ctx.lineTo(w * 0.65, h);
-//             ctx.bezierCurveTo(w * 0.65, h + s * t.bottom, w * 0.35, h + s * t.bottom, w * 0.35, h);
-//         }
-//         ctx.lineTo(0, h);
-
-//         // Left edge
-//         if (t.left !== 0) {
-//             ctx.lineTo(0, h * 0.65);
-//             ctx.bezierCurveTo(-s * t.left, h * 0.65, -s * t.left, h * 0.35, 0, h * 0.35);
-//         }
-//         ctx.closePath();
-//     }
-// }
-    function initGame() {
-        if (!img.src) return;
-        
-        pieces = [];
-        isGameOver = false;
-        const size = parseInt(document.getElementById('difficulty').value);
-        const ratio = img.width / img.height;
-        
-        let w = viewWidth * 0.8;
-        let h = w / ratio;
-        
-        if (h > viewHeight * 0.7) {
-            h = viewHeight * 0.7;
-            w = h * ratio;
-        }
-        
-        puzzleSize = { w: w, h: h };
-        puzzleOffset = { x: (viewWidth - w) / 2, y: (viewHeight - h) / 2 };
-        
-        const hTabs = [];
-        const vTabs = [];
-        
-        for (let i = 0; i <= size; i++) {
-            hTabs[i] = [];
-            vTabs[i] = [];
-            for (let j = 0; j <= size; j++) {
-                hTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
-                vTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
-            }
-        }
-
-        for (let r = 0; r < size; r++) {
-            for (let c = 0; c < size; c++) {
-                const tabs = {
-                    top: (r === 0) ? 0 : hTabs[r][c],
-                    right: (c === size - 1) ? 0 : vTabs[r][c + 1],
-                    bottom: (r === size - 1) ? 0 : -hTabs[r + 1][c],
-                    left: (c === 0) ? 0 : -vTabs[r][c]
-                };
-                
-                const piece = new Piece(r, c, size, w/size, h/size, img, tabs);
-                pieces.push(piece);
-            }
+function initGame() {
+    if (!img.src) return;
+    
+    pieces = [];
+    isGameOver = false;
+    const size = parseInt(document.getElementById('difficulty').value);
+    const ratio = img.width / img.height;
+    
+    // חישוב גודל הלוח המרכזי (70% מהמסך כדי להשאיר מקום בצדדים)
+    let w = viewWidth * 0.7;
+    let h = w / ratio;
+    
+    if (h > viewHeight * 0.7) {
+        h = viewHeight * 0.7;
+        w = h * ratio;
+    }
+    
+    puzzleSize = { w: w, h: h };
+    puzzleOffset = { x: (viewWidth - w) / 2, y: (viewHeight - h) / 2 };
+    
+    // יצירת מערך לשוניות תואם
+    const hTabs = [];
+    const vTabs = [];
+    for (let i = 0; i <= size; i++) {
+        hTabs[i] = []; vTabs[i] = [];
+        for (let j = 0; j <= size; j++) {
+            hTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
+            vTabs[i][j] = Math.random() > 0.5 ? 1 : -1;
         }
     }
 
+    // הגדרות למחסן החלקים בצדדים
+    const padding = 20;
+    const pieceW = w / size;
+    const pieceH = h / size;
+    
+    // שטחי הפיזור
+    const areaLeft = { x: padding, w: puzzleOffset.x - padding * 2 };
+    const areaRight = { x: puzzleOffset.x + w + padding, w: viewWidth - (puzzleOffset.x + w) - padding * 2 };
+    
+    // חישוב כמה נכנסים בשורה בכל צד
+    const colsL = Math.max(1, Math.floor(areaLeft.w / (pieceW * 0.8)));
+    const colsR = Math.max(1, Math.floor(areaRight.w / (pieceW * 0.8)));
+    
+    let leftIdx = 0;
+    let rightIdx = 0;
+
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            const tabs = {
+                top: (r === 0) ? 0 : hTabs[r][c],
+                right: (c === size - 1) ? 0 : vTabs[r][c + 1],
+                bottom: (r === size - 1) ? 0 : -hTabs[r + 1][c],
+                left: (c === 0) ? 0 : -vTabs[r][c]
+            };
+            
+            const piece = new Piece(r, c, size, pieceW, pieceH, img, tabs);
+            
+            // לוגיקת פיזור:
+            if (areaLeft.w > pieceW * 0.5 && (leftIdx <= rightIdx || areaRight.w < pieceW * 0.5)) {
+                // פיזור בצד שמאל
+                const col = leftIdx % colsL;
+                const row = Math.floor(leftIdx / colsL);
+                piece.x = areaLeft.x + col * (pieceW * 0.6);
+                piece.y = padding + row * (pieceH * 0.7);
+                leftIdx++;
+            } else if (areaRight.w > pieceW * 0.5) {
+                // פיזור בצד ימין
+                const col = rightIdx % colsR;
+                const row = Math.floor(rightIdx / colsR);
+                piece.x = areaRight.x + col * (pieceW * 0.6);
+                piece.y = padding + row * (pieceH * 0.7);
+                rightIdx++;
+            } else {
+                // גיבוי למסכים צרים מאוד (ניידים): פיזור אקראי מחוץ למרכז הלוח
+                piece.x = Math.random() * (viewWidth - pieceW);
+                piece.y = (Math.random() > 0.5) ? 
+                          Math.random() * (puzzleOffset.y - pieceH) : 
+                          puzzleOffset.y + h + (Math.random() * (viewHeight - (puzzleOffset.y + h) - pieceH));
+            }
+
+            // הוספת "בלגן" קטן כדי שלא יראה כמו טבלה
+            piece.x += (Math.random() - 0.5) * 15;
+            piece.y += (Math.random() - 0.5) * 15;
+
+            pieces.push(piece);
+        }
+    }
+    
+    // ערבוב סדר הציור כדי שחלקים לא יופיעו לפי הסדר שלהם בתמונה
+    pieces.sort(() => Math.random() - 0.5);
+}
     function render() {
         ctx.clearRect(0, 0, viewWidth, viewHeight);
         
@@ -794,7 +728,7 @@
                 group[i].isLocked = true;
             }
             snapSound.currentTime = 0;
-            snapSound.play().catch(function() {});
+            playSnap();   
         } else {
             // בדיקת הצמדה בין חלקים
             for (let i = 0; i < pieces.length; i++) {
@@ -822,17 +756,24 @@
                                     pieces[k].y -= diffY;
                                 }
                             }
-                            snapSound.currentTime = 0;
-                            snapSound.play().catch(function() {});
                         }
+                        snapSound.currentTime = 0;
+                        playSnap();   
                     }
                 }
             }
         }
-        
+             
         checkWin();
         selectedPiece = null;
     }
+
+    function playSnap() {
+    const snapSound = document.getElementById('snapSound');
+    const clone = snapSound.cloneNode(); // יוצר עותק שניתן לנגן במקביל
+    clone.volume = 0.5;
+    clone.play().catch(e => console.log("Audio blocked"));
+}
 
     function checkWin() {
         let allLocked = true;
