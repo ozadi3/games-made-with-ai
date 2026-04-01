@@ -188,12 +188,14 @@
     let scale = 1, offsetX = 0, offsetY = 0, isMoveMode = false, isEraserMode = false, isDragging = false, lastX=0, lastY=0;
 
     const presetImages = [
-        'https://www.doopi.co.il/img/paints/16972720756.webp',
         'https://nunitoys.com/wp-content/uploads/2026/01/Anna-and-Elsa-Coloring-Pages-1.webp',
         'https://dafbetzeva.co.il/wp-content/uploads/elementor/thumbs/%D7%93%D7%A3-%D7%A6%D7%91%D7%99%D7%A2%D7%94-%D7%A9%D7%9C-%D7%90%D7%9C%D7%96%D7%94-%D7%95%D7%91%D7%99%D7%99%D7%91%D7%99-%D7%90%D7%9C%D7%96%D7%94_webp-r4r8vscfej2v8iyje9vc553z52ero79r4pkp3k04lc.webp',
         'https://dafdafim.co.il/wp-content/uploads/2021/01/%D0%A0%D0%B0%D1%81%D0%BA%D1%80%D0%B0%D1%81%D0%BA%D0%B0-%D0%AD%D0%BB%D1%8C%D0%B7%D0%B0-%D0%B2-%D0%97%D0%B0%D1%87%D0%B0%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D0%BE%D0%BC-%D0%BB%D0%B5%D1%81%D1%83.jpg',
         'https://www.crayola.com/images/default-source/coloring-page-images/characters/olaf-and-sven-from-disney-frozen-2.png?sfvrsn=fd5a2b90_4',
-        'https://i.pinimg.com/736x/4d/d4/fa/4dd4fadcc79fd2c6f4c42f4c363a09f6.jpg'
+        'https://i.pinimg.com/736x/4d/d4/fa/4dd4fadcc79fd2c6f4c42f4c363a09f6.jpg',
+        'https://dafdafim.co.il/wp-content/uploads/2023/03/9.png',
+        'https://dafbetzeva.co.il/wp-content/uploads/elementor/thumbs/%D7%93%D7%A3-%D7%A6%D7%91%D7%99%D7%A2%D7%94-%D7%A0%D7%A1%D7%99%D7%9B%D7%94-%D7%A6%D7%A0%D7%95%D7%A2%D7%94-%D7%91%D7%97%D7%93%D7%A8-%D7%A9%D7%99%D7%A0%D7%94-%D7%9E%D7%9C%D7%9B%D7%95%D7%AA%D7%99_webp-rk7pdrlqqcewmhbs8gr5qwqwo5dit73l4p6eb4341s.webp',
+        'https://dafbetzeva.co.il/wp-content/uploads/elementor/thumbs/%D7%93%D7%A3-%D7%A6%D7%91%D7%99%D7%A2%D7%94-%D7%97%D7%93-%D7%A7%D7%A8%D7%9F-%D7%9B%D7%9C%D7%91-%D7%95%D7%A0%D7%A1%D7%99%D7%9B%D7%94-%D7%A2%D7%9D-%D7%A7%D7%A9%D7%AA-%D7%91%D7%A2%D7%A0%D7%9F_webp-r5c25mdscq845nyk5d1sfvzw5htauiiuosm9b3mp1c.webp',
     ];
 
     // פלטות של 24 צבעים לכל נושא
@@ -273,35 +275,116 @@
         img.onerror = () => { alert("לא ניתן לטעון תמונה זו"); loader.style.display = 'none'; };
     }
 
-    function handleStart(e) {
-        const t = e.touches ? e.touches[0] : e;
-        const rect = drawingCanvas.getBoundingClientRect();
-        const x = Math.floor((t.clientX - rect.left) / scale);
-        const y = Math.floor((t.clientY - rect.top) / scale);
-        isDragging = true; lastX = t.clientX; lastY = t.clientY;
-        if (isMoveMode) return;
-        if (isEraserMode) { saveState(); eraseAt(x, y); } else { floodFill(x, y, currentColor); }
-    }
+    let isDrawingLine = false; // משתנה עזר חדש למחיקה רציפה
 
-    function eraseAt(x, y) {
+function handleStart(e) {
+    const t = e.touches ? e.touches[0] : e;
+    const rect = drawingCanvas.getBoundingClientRect();
+    const x = Math.floor((t.clientX - rect.left) / scale);
+    const y = Math.floor((t.clientY - rect.top) / scale);
+    
+    isDragging = true; 
+    lastX = t.clientX; 
+    lastY = t.clientY;
+
+    if (isMoveMode) return;
+
+    if (isEraserMode) {
+        saveState();
+        isDrawingLine = true;
+        eraseAt(x, y); // מחיקה ראשונית בנקודת המגע
+    } else {
+        floodFill(x, y, currentColor);
+    }
+}
+
+function eraseAt(x, y) {
         drawingCtx.save(); drawingCtx.beginPath(); drawingCtx.arc(x, y, 20, 0, Math.PI * 2);
         drawingCtx.globalCompositeOperation = 'destination-out'; drawingCtx.fill(); drawingCtx.restore(); autoSave();
     }
 
-    function handleMove(e) {
-        if (!isDragging || !isMoveMode) return;
-        const t = e.touches ? e.touches[0] : e;
-        offsetX += (t.clientX - lastX); offsetY += (t.clientY - lastY);
-        lastX = t.clientX; lastY = t.clientY; updateTransform();
+function handleMove(e) {
+    if (!isDragging) return;
+    const t = e.touches ? e.touches[0] : e;
+    
+    if (isMoveMode) {
+        offsetX += (t.clientX - lastX);
+        offsetY += (t.clientY - lastY);
+        lastX = t.clientX; 
+        lastY = t.clientY;
+        updateTransform();
+    } else if (isEraserMode && isDrawingLine) {
+        const rect = drawingCanvas.getBoundingClientRect();
+        const x = Math.floor((t.clientX - rect.left) / scale);
+        const y = Math.floor((t.clientY - rect.top) / scale);
+        const prevX = Math.floor((lastX - rect.left) / scale);
+        const prevY = Math.floor((lastY - rect.top) / scale);
+        
+        eraseLine(prevX, prevY, x, y);
+        
+        lastX = t.clientX;
+        lastY = t.clientY;
     }
+}
+
+// פונקציית מחיקה רציפה חדשה
+function eraseLine(x1, y1, x2, y2) {
+    drawingCtx.save();
+    drawingCtx.globalCompositeOperation = 'destination-out';
+    drawingCtx.beginPath();
+    drawingCtx.moveTo(x1, y1);
+    drawingCtx.lineTo(x2, y2);
+    drawingCtx.lineWidth = 30; // עובי המחק
+    drawingCtx.lineCap = 'round';
+    drawingCtx.lineJoin = 'round';
+    drawingCtx.stroke();
+    drawingCtx.restore();
+    autoSave();
+}
+
+
+
 
     const playlist = ['https://allclassical.streamguys1.com/ac128kmp3', 'https://pub1.181.fm/181-classical_hi', 'https://gb25.streamgates.net/radios-audio/100Disney/icecast.audio'];
     let trackIdx = 0, isPlaying = false;
-    function toggleMusic() { 
-        if(!isPlaying) { bgMusic.src = playlist[trackIdx]; bgMusic.play(); } else { bgMusic.pause(); }
-        isPlaying = !isPlaying; document.getElementById('musicBtn').classList.toggle('active');
+    // עדכון פונקציות המוזיקה עם חיווי
+function toggleMusic() { 
+    const btn = document.getElementById('musicBtn');
+    if(!isPlaying) { 
+        bgMusic.src = playlist[trackIdx]; 
+        bgMusic.play().catch(e => console.log("User interaction required"));
+        btn.innerText = "🎶";
+        showMusicToast("מנגן כעת...");
+    } else { 
+        bgMusic.pause(); 
+        btn.innerText = "🔇";
     }
-    function nextStation() { trackIdx = (trackIdx+1)%playlist.length; if(isPlaying) { bgMusic.src = playlist[trackIdx]; bgMusic.play(); } }
+    isPlaying = !isPlaying; 
+    btn.classList.toggle('active');
+}
+
+function nextStation() { 
+    trackIdx = (trackIdx + 1) % playlist.length; 
+    if(isPlaying) { 
+        bgMusic.src = playlist[trackIdx]; 
+        bgMusic.play(); 
+    }
+    showMusicToast("עובר לתחנה הבאה...");
+}
+
+// פונקציית עזר לחיווי ויזואלי של הרדיו
+function showMusicToast(text) {
+    let toast = document.getElementById('musicToast');
+    if(!toast) {
+        toast = document.createElement('div');
+        toast.id = 'musicToast';
+        toast.style = "position:fixed; bottom:120px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.7); color:white; padding:8px 20px; border-radius:20px; z-index:1000; transition:0.3s; opacity:0;";
+        document.body.appendChild(toast);
+    }
+    toast.innerText = text;
+    toast.style.opacity = "1";
+    setTimeout(() => { toast.style.opacity = "0"; }, 2000);
+}
 
     function autoSave() { if(currentImgSrc) localStorage.setItem('save_' + currentImgSrc, drawingCanvas.toDataURL()); }
     function saveState() { historyStack.push(drawingCtx.getImageData(0,0,drawingCanvas.width,drawingCanvas.height)); if(historyStack.length>15) historyStack.shift(); }
@@ -336,11 +419,43 @@
 
     function getFavs() { return JSON.parse(localStorage.getItem('myFavs') || '[]'); }
     function toggleFavoriteCurrent() {
-        let f = getFavs(); const i = f.indexOf(currentImgSrc);
-        if(i>-1) f.splice(i,1); else f.push(currentImgSrc);
-        localStorage.setItem('myFavs', JSON.stringify(f)); updateFavUI();
+    if (!currentImgSrc) return; // הגנה למקרה שאין תמונה טעונה
+    
+    let f = getFavs();
+    const index = f.indexOf(currentImgSrc);
+    const btn = document.getElementById('floatingFavBtn');
+
+    if (index > -1) {
+        // הסרה מהמועדפים
+        f.splice(index, 1);
+        btn.innerHTML = "🤍";
+        btn.classList.remove('is-fav');
+    } else {
+        // הוספה למועדפים
+        f.push(currentImgSrc);
+        btn.innerHTML = "❤️";
+        btn.classList.add('is-fav');
+        
+        // אפקט "פעימה" קטן לחיזוק החוויה
+        btn.style.transform = "scale(1.3)";
+        setTimeout(() => btn.style.transform = "scale(1)", 200);
     }
-    function updateFavUI() { document.getElementById('floatingFavBtn').classList.toggle('is-fav', getFavs().includes(currentImgSrc)); }
+
+    localStorage.setItem('myFavs', JSON.stringify(f));
+    console.log("מועדפים מעודכנים:", f); // לבדיקה בקונסול
+}
+
+function updateFavUI() {
+    const f = getFavs();
+    const btn = document.getElementById('floatingFavBtn');
+    if (f.includes(currentImgSrc)) {
+        btn.innerHTML = "❤️";
+        btn.classList.add('is-fav');
+    } else {
+        btn.innerHTML = "🤍";
+        btn.classList.remove('is-fav');
+    }
+}
     function openFavorites() {
         const g = document.getElementById('favGrid'); g.innerHTML = '';
         getFavs().forEach(src => {
@@ -353,9 +468,14 @@
     function closeAllModals() { document.querySelectorAll('.modal, .modal-overlay').forEach(e=>e.style.display='none'); }
     function loadFromURL() { loadSpecificURL(document.getElementById('urlInput').value); }
 
-    drawingCanvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', () => isDragging=false);
-    drawingCanvas.addEventListener('touchstart', handleStart); window.addEventListener('touchmove', handleMove); window.addEventListener('touchend', () => isDragging=false);
-    
+    drawingCanvas.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', () => { isDragging = false; isDrawingLine = false; });
+    drawingCanvas.addEventListener('touchstart', handleStart); window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', () => { isDragging = false; isDrawingLine = false; });
+
+
+
+
     updatePalette('rainbow');
     loadSpecificURL(presetImages[0]);
 </script>
