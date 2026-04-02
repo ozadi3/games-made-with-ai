@@ -25,6 +25,11 @@
             align-items: center;
             height: 100vh;
             width: 100vw;
+            position: fixed;
+            -webkit-overflow-scrolling: none;
+            user-select: none;
+            -webkit-user-select: none;
+
         }
 
         .menu-trigger {
@@ -370,18 +375,73 @@ class Piece {
         this.img = img;
         this.tabs = tabs;
         
-        // גודל לשונית יחסי לגודל החתיכה על המסך
+        // גודל לשונית - שימוש בערך קבוע יחסית למסך
         this.tabSize = Math.floor(Math.min(pW, pH) * 0.28);
-        // באפר מספיק גדול כדי להכיל את הלשוניות בציור
-        this.tabBuffer = this.tabSize * 1.5;
+        // הבאפר חייב להיות שלם כדי למנוע זליגת פיקסלים באייפד
+        this.tabBuffer = Math.ceil(this.tabSize * 1.5);
 
-        // מיקום היעד על הקנבס (מעוגל כדי למנוע טשטוש/זליגה)
         this.targetX = Math.floor(puzzleOffset.x + (c * pW));
         this.targetY = Math.floor(puzzleOffset.y + (r * pH));
         
         this.resetPosition();
         this.isLocked = false;
         this.groupId = 'r' + r + 'c' + c;
+    }
+
+    draw(context, isGhost = false) {
+        context.save();
+        
+        const posX = isGhost ? this.targetX : this.x;
+        const posY = isGhost ? this.targetY : this.y;
+
+        context.translate(posX, posY);
+        
+        context.beginPath();
+        this.createPath(context);
+
+        if (isGhost) {
+            context.strokeStyle = "rgba(0,0,0,0.1)";
+            context.lineWidth = 1;
+            context.stroke();
+            context.fillStyle = "rgba(0,0,0,0.05)";
+            context.fill();
+            context.restore();
+            return;
+        }
+
+        context.clip();
+
+        // --- פתרון "התמונה הגדולה מדי" ---
+        // במקום לחשב ראציו, נחשב כמה פיקסלים בתמונה המקורית שווים לכל פיקסל על המסך
+        const imgW = this.img.width;
+        const imgH = this.img.height;
+        
+        // גודל של חלק אחד בתמונה המקורית
+        const sw = imgW / this.size;
+        const sh = imgH / this.size;
+        
+        // המיקום המדויק בתמונה המקורית
+        const sx = this.c * sw;
+        const sy = this.r * sh;
+        
+        // חישוב הבאפר במונחים של התמונה המקורית
+        // החישוב הזה קריטי: הוא חייב להיות תואם ליחס בין גודל הלוח על המסך לגודל התמונה
+        const sBufferX = (this.tabBuffer / this.pW) * sw;
+        const sBufferY = (this.tabBuffer / this.pH) * sh;
+
+        context.drawImage(
+            this.img,
+            sx - sBufferX, 
+            sy - sBufferY, 
+            sw + (sBufferX * 2), 
+            sh + (sBufferY * 2),
+            -this.tabBuffer, 
+            -this.tabBuffer, 
+            this.pW + (this.tabBuffer * 2), 
+            this.pH + (this.tabBuffer * 2)
+        );
+
+        context.restore();
     }
 
     resetPosition() {
@@ -411,63 +471,6 @@ class Piece {
 
     contains(mx, my) {
         return mx > this.x && mx < this.x + this.pW && my > this.y && my < this.y + this.pH;
-    }
-
-    draw(context, isGhost = false) {
-        context.save();
-        
-        const posX = Math.floor(isGhost ? this.targetX : this.x);
-        const posY = Math.floor(isGhost ? this.targetY : this.y);
-
-        context.translate(posX, posY);
-        
-        context.beginPath();
-        this.createPath(context);
-
-        if (isGhost) {
-            context.strokeStyle = "rgba(0,0,0,0.1)";
-            context.lineWidth = 1;
-            context.stroke();
-            context.fillStyle = "rgba(0,0,0,0.05)";
-            context.fill();
-            context.restore();
-            return;
-        }
-
-        context.clip();
-
-        // --- חישוב מקור התמונה (Source) בדיוק גבוה ---
-        
-        // 1. חישוב גודל חתיכה אחת בפיקסלים של התמונה המקורית
-        const sw = this.img.width / this.size;
-        const sh = this.img.height / this.size;
-        
-        // 2. מיקום הפינה של החתיכה בתמונה המקורית
-        const sx = this.c * sw;
-        const sy = this.r * sh;
-        
-        // 3. חישוב כמה "באפר" לקחת מהתמונה המקורית עבור הלשוניות
-        // היחס בין הפיקסלים על המסך לפיקסלים בתמונה:
-        const ratioX = sw / this.pW;
-        const ratioY = sh / this.pH;
-        
-        const sBufferX = this.tabBuffer * ratioX;
-        const sBufferY = this.tabBuffer * ratioY;
-
-        // הציור משתמש בערכים שלמים במידת האפשר כדי למנוע זליגות באייפד
-        context.drawImage(
-            this.img,
-            sx - sBufferX, 
-            sy - sBufferY, 
-            sw + (sBufferX * 2), 
-            sh + (sBufferY * 2),
-            -this.tabBuffer, 
-            -this.tabBuffer, 
-            this.pW + (this.tabBuffer * 2), 
-            this.pH + (this.tabBuffer * 2)
-        );
-
-        context.restore();
     }
 
     createPath(ctx) {
@@ -603,7 +606,7 @@ function initGame() {
     pieces.sort(() => Math.random() - 0.5);
 }
     function render() {
-        ctx.clearRect(0, 0, viewWidth, viewHeight);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         if (isGameOver) {
             // ציור התמונה המקורית המלאה בסיום
@@ -708,66 +711,68 @@ function initGame() {
     }
 
     function handleEnd() {
-        if (!selectedPiece || isGameOver) return;
-        
-        const groupId = selectedPiece.groupId;
-        const group = [];
+    if (!selectedPiece || isGameOver) return;
+    
+    const groupId = selectedPiece.groupId;
+    const group = pieces.filter(p => p.groupId === groupId);
+    const first = group[0];
+    let didSnap = false; // משתנה בקרה להשמעת סאונד
+
+    // 1. בדיקת הצמדה ללוח (Target)
+    const distToTarget = Math.hypot(first.x - first.targetX, first.y - first.targetY);
+    if (distToTarget < 35) {
+        group.forEach(p => {
+            p.x = p.targetX;
+            p.y = p.targetY;
+            p.isLocked = true;
+        });
+        didSnap = true; // סימון שבוצע חיבור ללוח
+    } else {
+        // 2. בדיקת הצמדה בין חלקים (רק אם לא ננעל ללוח)
         for (let i = 0; i < pieces.length; i++) {
-            if (pieces[i].groupId === groupId) group.push(pieces[i]);
-        }
-        
-        const first = group[0];
-        const snapSound = document.getElementById('snapSound');
-        
-        // בדיקת הצמדה ללוח
-        const distToTarget = Math.hypot(first.x - first.targetX, first.y - first.targetY);
-        if (distToTarget < 35) {
-            for (let i = 0; i < group.length; i++) {
-                group[i].x = group[i].targetX;
-                group[i].y = group[i].targetY;
-                group[i].isLocked = true;
-            }
-            snapSound.currentTime = 0;
-            playSnap();   
-        } else {
-            // בדיקת הצמדה בין חלקים
-            for (let i = 0; i < pieces.length; i++) {
-                const other = pieces[i];
-                if (other.isLocked || other.groupId === groupId) continue;
+            const other = pieces[i];
+            if (other.isLocked || other.groupId === groupId) continue;
+            
+            for (let j = 0; j < group.length; j++) {
+                const p = group[j];
+                const isNeighbor = (Math.abs(p.r - other.r) === 1 && p.c === other.c) || 
+                                   (Math.abs(p.c - other.c) === 1 && p.r === other.r);
                 
-                for (let j = 0; j < group.length; j++) {
-                    const p = group[j];
-                    const isNeighbor = (Math.abs(p.r - other.r) === 1 && p.c === other.c) || 
-                                       (Math.abs(p.c - other.c) === 1 && p.r === other.r);
+                if (isNeighbor) {
+                    const expectedX = p.x + (other.c - p.c) * p.pW;
+                    const expectedY = p.y + (other.r - p.r) * p.pH;
                     
-                    if (isNeighbor) {
-                        const expectedX = p.x + (other.c - p.c) * p.pW;
-                        const expectedY = p.y + (other.r - p.r) * p.pH;
+                    // בדיקה אם הם קרובים מספיק כדי להתמגנט
+                    if (Math.hypot(other.x - expectedX, other.y - expectedY) < 30) {
+                        const oldId = other.groupId;
+                        const diffX = other.x - expectedX;
+                        const diffY = other.y - expectedY;
                         
-                        if (Math.hypot(other.x - expectedX, other.y - expectedY) < 30) {
-                            const oldId = other.groupId;
-                            const diffX = other.x - expectedX;
-                            const diffY = other.y - expectedY;
-                            
-                            for (let k = 0; k < pieces.length; k++) {
-                                if (pieces[k].groupId === oldId) {
-                                    pieces[k].groupId = groupId;
-                                    pieces[k].x -= diffX;
-                                    pieces[k].y -= diffY;
-                                }
+                        // איחוד הקבוצות
+                        pieces.forEach(piece => {
+                            if (piece.groupId === oldId) {
+                                piece.groupId = groupId;
+                                piece.x -= diffX;
+                                piece.y -= diffY;
                             }
-                        }
-                        snapSound.currentTime = 0;
-                        playSnap();   
+                        });
+                        didSnap = true; // סימון שבוצע חיבור בין חלקים
+                        break; // יציאה מהלולאה הפנימית כדי לא להשמיע סאונד כפול
                     }
                 }
             }
+            if (didSnap) break; // יציאה מהלולאה החיצונית
         }
-             
-        checkWin();
-        selectedPiece = null;
     }
 
+    // השמעת סאונד רק אם באמת קרה חיבור
+    if (didSnap) {
+        playSnap();
+    }
+             
+    checkWin();
+    selectedPiece = null;
+}
     function playSnap() {
     const snapSound = document.getElementById('snapSound');
     const clone = snapSound.cloneNode(); // יוצר עותק שניתן לנגן במקביל
