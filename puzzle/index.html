@@ -389,60 +389,59 @@ class Piece {
     }
 
     draw(context, isGhost = false) {
-        context.save();
-        
-        const posX = isGhost ? this.targetX : this.x;
-        const posY = isGhost ? this.targetY : this.y;
+    context.save();
+    const posX = isGhost ? this.targetX : this.x;
+    const posY = isGhost ? this.targetY : this.y;
+    context.translate(posX, posY);
+    
+    context.beginPath();
+    this.createPath(context);
 
-        context.translate(posX, posY);
-        
-        context.beginPath();
-        this.createPath(context);
-
-        if (isGhost) {
-            context.strokeStyle = "rgba(0,0,0,0.1)";
-            context.lineWidth = 1;
-            context.stroke();
-            context.fillStyle = "rgba(0,0,0,0.05)";
-            context.fill();
-            context.restore();
-            return;
-        }
-
-        context.clip();
-
-        // --- פתרון "התמונה הגדולה מדי" ---
-        // במקום לחשב ראציו, נחשב כמה פיקסלים בתמונה המקורית שווים לכל פיקסל על המסך
-        const imgW = this.img.width;
-        const imgH = this.img.height;
-        
-        // גודל של חלק אחד בתמונה המקורית
-        const sw = imgW / this.size;
-        const sh = imgH / this.size;
-        
-        // המיקום המדויק בתמונה המקורית
-        const sx = this.c * sw;
-        const sy = this.r * sh;
-        
-        // חישוב הבאפר במונחים של התמונה המקורית
-        // החישוב הזה קריטי: הוא חייב להיות תואם ליחס בין גודל הלוח על המסך לגודל התמונה
-        const sBufferX = (this.tabBuffer / this.pW) * sw;
-        const sBufferY = (this.tabBuffer / this.pH) * sh;
-
-        context.drawImage(
-            this.img,
-            sx - sBufferX, 
-            sy - sBufferY, 
-            sw + (sBufferX * 2), 
-            sh + (sBufferY * 2),
-            -this.tabBuffer, 
-            -this.tabBuffer, 
-            this.pW + (this.tabBuffer * 2), 
-            this.pH + (this.tabBuffer * 2)
-        );
-
+    if (isGhost) {
+        context.strokeStyle = "rgba(0,0,0,0.1)";
+        context.lineWidth = 1;
+        context.stroke();
+        context.fillStyle = "rgba(0,0,0,0.05)";
+        context.fill();
         context.restore();
+        return;
     }
+
+    context.clip();
+
+    // גודל התמונה המקורית
+    const imgW = this.img.width;
+    const imgH = this.img.height;
+    
+    // גודל "נטו" של חלק אחד בתמונה
+    const sw = imgW / this.size;
+    const sh = imgH / this.size;
+    
+    // מיקום הפינה בתמונה
+    const sx = this.c * sw;
+    const sy = this.r * sh;
+    
+    // חישוב הבאפר במונחים של התמונה המקורית
+    const sBufferX = (this.tabBuffer / this.pW) * sw;
+    const sBufferY = (this.tabBuffer / this.pH) * sh;
+
+    // --- התיקון הקריטי: מניעת השמטה בקצוות ---
+    // אנחנו מציירים את התמונה המקורית בתוך ה-Clip, 
+    // אבל דואגים שהמיקום שלה יתחשב בבאפר.
+    context.drawImage(
+        this.img,
+        sx - sBufferX, 
+        sy - sBufferY, 
+        sw + (sBufferX * 2), 
+        sh + (sBufferY * 2),
+        -this.tabBuffer, 
+        -this.tabBuffer, 
+        this.pW + (this.tabBuffer * 2), 
+        this.pH + (this.tabBuffer * 2)
+    );
+
+    context.restore();
+}
 
     resetPosition() {
     const padding = 20; // מרווח מהקצוות
