@@ -8,8 +8,10 @@
     <style>
         :root {
             --primary: #6c5ce7;
-            --player1: #ff7675;
-            --player2: #74b9ff;
+            --p-color-0: #ff7675; /* שחקן 1 */
+            --p-color-1: #74b9ff; /* שחקן 2 */
+            --p-color-2: #55efc4; /* שחקן 3 */
+            --p-color-3: #ffeaa7; /* שחקן 4 */
             --bg: #f0f2f5;
             --sidebar-width: 220px;
         }
@@ -49,7 +51,7 @@
         .logo {
             font-size: 1.5rem;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-weight: bold;
             color: var(--primary);
         }
@@ -57,8 +59,9 @@
         .scoreboard-side {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             margin-bottom: auto;
+            overflow-y: auto;
         }
 
         .player-box {
@@ -67,7 +70,7 @@
             text-align: center;
             border: 3px solid transparent;
             transition: all 0.3s ease;
-            opacity: 0.6;
+            opacity: 0.5;
             background: #f8f9fa;
         }
 
@@ -79,9 +82,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        .p1 { color: var(--player1); }
-        .p2 { color: var(--player2); }
-        .score { font-size: 2rem; font-weight: 900; }
+        .score { font-size: 1.8rem; font-weight: 900; }
         
         .name-container {
             display: flex;
@@ -89,12 +90,12 @@
             justify-content: center;
             gap: 5px;
             font-weight: bold;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin-bottom: 5px;
         }
 
         .edit-btn {
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             padding: 4px;
             border-radius: 50%;
@@ -105,12 +106,12 @@
         .controls {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             padding-top: 15px;
             border-top: 2px solid #eee;
         }
 
-        .controls label { font-size: 0.8rem; font-weight: bold; color: #666; }
+        .controls label { font-size: 0.75rem; font-weight: bold; color: #666; margin-top: 5px; }
 
         select, button {
             width: 100%;
@@ -158,7 +159,7 @@
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 18vh; /* הגנה מפני חריגת גובה */
+            max-height: 18vh;
         }
 
         .card.flipped { transform: rotateY(180deg); }
@@ -247,26 +248,17 @@
     <aside class="sidebar">
         <div class="logo">זיכרון ✨</div>
         
-        <div class="scoreboard-side">
-            <div id="p1-box" class="player-box p1 active">
-                <div class="name-container">
-                    <span id="p1-display-name">שחקן 1</span>
-                    <span id="p1-emoji">👦</span>
-                    <span class="edit-btn" onclick="openEditModal(0)">✏️</span>
-                </div>
-                <div id="p1-score" class="score">0</div>
-            </div>
-            <div id="p2-box" class="player-box p2">
-                <div class="name-container">
-                    <span id="p2-display-name">שחקנית 2</span>
-                    <span id="p2-emoji">👧</span>
-                    <span class="edit-btn" onclick="openEditModal(1)">✏️</span>
-                </div>
-                <div id="p2-score" class="score">0</div>
-            </div>
-        </div>
+        <div id="scoreboard-container" class="scoreboard-side"></div>
 
         <div class="controls">
+            <label>כמות שחקנים</label>
+            <select id="player-count-select" onchange="updatePlayerCount()">
+                <option value="2">2 שחקנים</option>
+                <option value="3">3 שחקנים</option>
+                <option value="4">4 שחקנים</option>
+            </select>
+
+            <label>קטגוריה</label>
             <select id="category-select">
                 <option value="foods">🍕 מאכלים</option>
                 <option value="characters">🤖 דמויות</option>
@@ -274,6 +266,8 @@
                 <option value="numbers">🔢 1-2-3</option>
                 <option value="furniture">🪑 רהיטים</option>
             </select>
+
+            <label>כמות חלקים</label>
             <select id="size-select">
                 <option value="12">12 חלקים</option>
                 <option value="16" selected>16 חלקים</option>
@@ -304,39 +298,48 @@
 <script>
     const data = {
         foods: ['🍕','🍔','🍟','🍎','🍦','🍩','🥑','🥨','🍓','🍣','🥞','🍉','🌽','🥕'],
-        characters: ['🤖','🦄','🦁','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱'],
+        characters: ['🤖','🦄','🦁','REX','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱'],
         furniture: ['🏠','🛋️','🛏️','🪑','🛀','📺','🧺','🪞','🚪','🏮','📚','🪴','🕯️','⏰'],
         letters: ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ'],
         numbers: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15']
     };
 
-    let players = JSON.parse(localStorage.getItem('memory_players')) || [
+    // טעינת מידע מהזיכרון או ברירת מחדל ל-4 שחקנים
+    let players = JSON.parse(localStorage.getItem('memory_players_v4')) || [
         { name: 'שחקן 1', emoji: '👦' },
-        { name: 'שחקנית 2', emoji: '👧' }
+        { name: 'שחקנית 2', emoji: '👧' },
+        { name: 'שחקן 3', emoji: '👦' },
+        { name: 'שחקנית 4', emoji: '👧' }
     ];
 
-    let flipped = [];
-    let scores = [0, 0];
+    let playerCount = parseInt(localStorage.getItem('memory_player_count')) || 2;
+    let scores = [];
     let currentPlayer = 0;
+    let flipped = [];
     let isLock = false;
-    let editingPlayerIndex = null;
-    let selectedEmoji = '👦';
+    let editingIdx = null;
+    let tempEmoji = '👦';
+
+    function updatePlayerCount() {
+        playerCount = parseInt(document.getElementById('player-count-select').value);
+        localStorage.setItem('memory_player_count', playerCount);
+        initGame();
+    }
 
     function initGame() {
         const board = document.getElementById('board');
         const totalCards = parseInt(document.getElementById('size-select').value);
         const category = document.getElementById('category-select').value;
         
+        document.getElementById('player-count-select').value = playerCount;
         board.innerHTML = '';
         flipped = [];
-        scores = [0, 0];
+        scores = new Array(playerCount).fill(0);
         currentPlayer = 0;
         isLock = false;
         
-        applyPlayerData();
-        updateUI();
+        renderScoreboard();
 
-        // נוסחת פיזור למניעת חריגה: ב-20 ו-24 חלקים נשתמש ב-6 עמודות
         let cols = (totalCards >= 20) ? 6 : 4;
         board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
@@ -354,15 +357,36 @@
         });
     }
 
+    function renderScoreboard() {
+        const container = document.getElementById('scoreboard-container');
+        container.innerHTML = '';
+        for (let i = 0; i < playerCount; i++) {
+            const p = players[i];
+            const box = document.createElement('div');
+            box.id = `p${i}-box`;
+            box.className = `player-box ${i === currentPlayer ? 'active' : ''}`;
+            box.style.color = `var(--p-color-${i})`;
+            box.innerHTML = `
+                <div class="name-container">
+                    <span>${p.name}</span>
+                    <span>${p.emoji}</span>
+                    <span class="edit-btn" onclick="openEditModal(${i})">✏️</span>
+                </div>
+                <div class="score">${scores[i]}</div>
+            `;
+            container.appendChild(box);
+        }
+    }
+
     function openEditModal(index) {
-        editingPlayerIndex = index;
+        editingIdx = index;
         document.getElementById('edit-name-input').value = players[index].name;
         selectGender(players[index].emoji);
         document.getElementById('edit-modal').style.display = 'flex';
     }
 
     function selectGender(emoji) {
-        selectedEmoji = emoji;
+        tempEmoji = emoji;
         document.getElementById('g-boy').classList.toggle('selected', emoji === '👦');
         document.getElementById('g-girl').classList.toggle('selected', emoji === '👧');
     }
@@ -370,19 +394,12 @@
     function savePlayerEdit() {
         const newName = document.getElementById('edit-name-input').value.trim();
         if(newName) {
-            players[editingPlayerIndex].name = newName;
-            players[editingPlayerIndex].emoji = selectedEmoji;
-            localStorage.setItem('memory_players', JSON.stringify(players));
-            applyPlayerData();
+            players[editingIdx].name = newName;
+            players[editingIdx].emoji = tempEmoji;
+            localStorage.setItem('memory_players_v4', JSON.stringify(players));
+            renderScoreboard();
             document.getElementById('edit-modal').style.display = 'none';
         }
-    }
-
-    function applyPlayerData() {
-        document.getElementById('p1-display-name').innerText = players[0].name;
-        document.getElementById('p1-emoji').innerText = players[0].emoji;
-        document.getElementById('p2-display-name').innerText = players[1].name;
-        document.getElementById('p2-emoji').innerText = players[1].emoji;
     }
 
     function handleFlip(card) {
@@ -400,31 +417,26 @@
             setTimeout(() => {
                 c1.classList.add('matched'); c2.classList.add('matched');
                 isLock = false; flipped = [];
-                updateUI(); checkWin();
+                renderScoreboard(); checkWin();
             }, 600);
         } else {
             setTimeout(() => {
                 c1.classList.remove('flipped'); c2.classList.remove('flipped');
-                currentPlayer = 1 - currentPlayer;
+                currentPlayer = (currentPlayer + 1) % playerCount;
                 isLock = false; flipped = [];
-                updateUI();
+                renderScoreboard();
             }, 1000);
         }
     }
 
-    function updateUI() {
-        document.getElementById('p1-score').innerText = scores[0];
-        document.getElementById('p2-score').innerText = scores[1];
-        document.getElementById('p1-box').classList.toggle('active', currentPlayer === 0);
-        document.getElementById('p2-box').classList.toggle('active', currentPlayer === 1);
-    }
-
     function checkWin() {
         const totalPairs = parseInt(document.getElementById('size-select').value) / 2;
-        if (scores[0] + scores[1] === totalPairs) {
+        const totalFound = scores.reduce((a, b) => a + b, 0);
+        if (totalFound === totalPairs) {
             confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-            let winner = scores[0] > scores[1] ? players[0].name : (scores[1] > scores[0] ? players[1].name : "שניכם");
-            setTimeout(() => alert(`כל הכבוד ל${winner}! 🎉`), 700);
+            let maxScore = Math.max(...scores);
+            let winners = players.filter((p, i) => scores[i] === maxScore).map(p => p.name);
+            setTimeout(() => alert(`הסוף! כל הכבוד ל${winners.join(' ו-')}! 🎉`), 700);
         }
     }
 
