@@ -8,10 +8,10 @@
     <style>
         :root {
             --primary: #6c5ce7;
-            --p-color-0: #ff7675; /* שחקן 1 */
-            --p-color-1: #74b9ff; /* שחקן 2 */
-            --p-color-2: #55efc4; /* שחקן 3 */
-            --p-color-3: #ffeaa7; /* שחקן 4 */
+            --p-color-0: #ff7675;
+            --p-color-1: #74b9ff;
+            --p-color-2: #55efc4;
+            --p-color-3: #ffeaa7;
             --bg: #f0f2f5;
             --sidebar-width: 220px;
         }
@@ -35,7 +35,6 @@
             overflow: hidden;
         }
 
-        /* סרגל צד */
         .sidebar {
             width: var(--sidebar-width);
             background: white;
@@ -103,6 +102,8 @@
             line-height: 1;
         }
 
+        .hidden-edit .edit-btn { display: none; }
+
         .controls {
             display: flex;
             flex-direction: column;
@@ -132,7 +133,6 @@
 
         button:active { transform: translateY(2px); box-shadow: 0 2px 0 #5649c0; }
 
-        /* אזור המשחק */
         .main-area {
             flex-grow: 1;
             height: 100%;
@@ -145,10 +145,10 @@
 
         .game-board {
             display: grid;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
             height: 100%;
-            max-width: 950px;
+            max-width: 1000px;
             max-height: 90vh;
             justify-content: center;
             align-content: center;
@@ -159,7 +159,8 @@
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 18vh;
+            max-height: 15vh;
+            cursor: pointer;
         }
 
         .card.flipped { transform: rotateY(180deg); }
@@ -172,24 +173,46 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: clamp(2rem, 11vh, 5.5rem);
-            border-radius: 20px;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            font-size: clamp(1.5rem, 8vh, 4rem);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             border: 3px solid white;
         }
 
-        .card-front { background: white; transform: rotateY(180deg); color: #2d3436; font-weight: 900; }
+        .card-front { 
+            background: white; 
+            transform: rotateY(180deg); 
+            color: #2d3436; 
+            font-weight: 900; 
+        }
+
+        /* עיצוב משופר לרמקול */
+        .speak-trigger {
+            position: absolute;
+            top: 8px;
+            right: 8px; /* העברתי לימין כדי שלא יתנגש עם הצד של ה-RTL */
+            font-size: 1.2rem;
+            background: #f0edff;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            z-index: 50; /* גבוה מאוד כדי להיות מעל הכל */
+            pointer-events: auto;
+        }
+
         .card-back { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
 
         .card.matched { animation: match-success 0.5s forwards; pointer-events: none; }
 
         @keyframes match-success {
             0% { transform: rotateY(180deg) scale(1); }
-            50% { transform: rotateY(180deg) scale(1.1); }
             100% { transform: rotateY(180deg) scale(0); opacity: 0; }
         }
 
-        /* מודאל */
         .modal {
             display: none;
             position: fixed;
@@ -235,9 +258,9 @@
             body { flex-direction: column; }
             .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; }
             .logo, .controls label { display: none; }
-            .scoreboard-side { flex-direction: row; flex-grow: 1; margin: 0; gap: 5px; }
-            .player-box { padding: 5px; flex: 1; }
-            .score { font-size: 1.5rem; }
+            .scoreboard-side { flex-direction: row; flex-grow: 1; margin: 0; gap: 5px; overflow-x: auto; }
+            .player-box { padding: 5px; flex: 1; min-width: 80px; }
+            .score { font-size: 1.2rem; }
             .controls { flex-direction: row; border: none; padding: 0; gap: 5px; }
             .main-area { padding: 10px; }
         }
@@ -247,7 +270,6 @@
 
     <aside class="sidebar">
         <div class="logo">זיכרון ✨</div>
-        
         <div id="scoreboard-container" class="scoreboard-side"></div>
 
         <div class="controls">
@@ -273,6 +295,8 @@
                 <option value="16" selected>16 חלקים</option>
                 <option value="20">20 חלקים</option>
                 <option value="24">24 חלקים</option>
+                <option value="30">30 חלקים</option>
+                <option value="36">36 חלקים</option>
             </select>
             <button onclick="initGame()">התחל! 🚀</button>
         </div>
@@ -285,7 +309,7 @@
 
     <div id="edit-modal" class="modal">
         <div class="modal-content">
-            <h3 id="modal-title">עריכת שחקן</h3>
+            <h3>עריכת שחקן</h3>
             <input type="text" id="edit-name-input" maxlength="10">
             <div class="gender-options">
                 <div class="gender-btn" id="g-boy" onclick="selectGender('👦')">👦 בן</div>
@@ -296,15 +320,20 @@
     </div>
 
 <script>
-    const data = {
-        foods: ['🍕','🍔','🍟','🍎','🍦','🍩','🥑','🥨','🍓','🍣','🥞','🍉','🌽','🥕'],
-        characters: ['🤖','🦄','🦁','REX','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱'],
-        furniture: ['🏠','🛋️','🛏️','🪑','🛀','📺','🧺','🪞','🚪','🏮','📚','🪴','🕯️','⏰'],
-        letters: ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ'],
-        numbers: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15']
+    const emojiNames = {
+        '🍕':'פיצה','🍔':'המבורגר','🍟':'צ׳יפס','🍎':'תפוח','🍦':'גלידה','🍩':'דונאט','🥑':'אבוקדו','🥨':'פרצלה','🍓':'תות',' sushi':'סושי','🥞':'פנקייק','🍉':'אבטיח','🌽':'תירס','🥕':'גזר','🌮':'טאקו','🥪':'סנדוויץ׳','🍳':'ביצה','🍿':'פופקורן',
+        '🤖':'רובוט','🦄':'חד קרן','🦁':'אריה','🦖':'דינוזאור','🐙':'תמנון','🐸':'צפרדע','🐼':'פנדה','🐵':'קוף','👻':'רוח רפאים','👽':'חייזר','🧜‍♀️':'בת הים','🧚‍♂️':'פיה','🦋':'פרפר','🐱':'חתול','🐶':'כלב','🐰':'ארנב','🦊':'שועל','🐯':'נמר',
+        '🏠':'בית','🛋️':'ספה','🛏️':'מיטה','🪑':'כיסא','🛀':'אמבטיה','📺':'טלוויזיה','🧺':'סל כביסה','🪞':'מראה','🚪':'דלת','🏮':'מנורה','📚':'ספרים','🪴':'עציץ','🕯️':'נר','⏰':'שעון','🛁':'אמבט','🧱':'לבנים','🔭':'טלסקופ','🚿':'מקלחת'
     };
 
-    // טעינת מידע מהזיכרון או ברירת מחדל ל-4 שחקנים
+    const data = {
+        foods: ['🍕','🍔','🍟','🍎','🍦','🍩','🥑','🥨','🍓','🍣','🥞','🍉','🌽','🥕','🌮','🥪','🍳','🍿'],
+        characters: ['🤖','🦄','🦁','REX','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱','🐶','🐰','🦊','🐯'],
+        furniture: ['🏠','🛋️','🛏️','🪑','🛀','📺','🧺','🪞','🚪','🏮','📚','🪴','🕯️','⏰','🛁','🧱','🔭','🚿'],
+        letters: ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'],
+        numbers: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18']
+    };
+
     let players = JSON.parse(localStorage.getItem('memory_players_v4')) || [
         { name: 'שחקן 1', emoji: '👦' },
         { name: 'שחקנית 2', emoji: '👧' },
@@ -319,10 +348,20 @@
     let isLock = false;
     let editingIdx = null;
     let tempEmoji = '👦';
+    let gameInProgress = false;
+
+    function speak(text) {
+        const word = emojiNames[text] || text;
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'he-IL';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
 
     function updatePlayerCount() {
         playerCount = parseInt(document.getElementById('player-count-select').value);
         localStorage.setItem('memory_player_count', playerCount);
+        gameInProgress = false;
         initGame();
     }
 
@@ -337,10 +376,15 @@
         scores = new Array(playerCount).fill(0);
         currentPlayer = 0;
         isLock = false;
+        gameInProgress = false;
         
         renderScoreboard();
 
-        let cols = (totalCards >= 20) ? 6 : 4;
+        let cols = 4;
+        if (totalCards >= 36) cols = 9;
+        else if (totalCards >= 30) cols = 6;
+        else if (totalCards >= 20) cols = 5;
+        
         board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
         const selectedSet = data[category] || data.foods;
@@ -351,25 +395,41 @@
             const card = document.createElement('div');
             card.className = 'card';
             card.dataset.val = val;
-            card.innerHTML = `<div class="card-face card-front">${val}</div><div class="card-face card-back"></div>`;
-            card.onclick = () => handleFlip(card);
+            
+            card.innerHTML = `
+                <div class="card-face card-front">
+                    <div class="speak-trigger" onclick="handleSpeakClick(event, '${val}')">📢</div>
+                    ${val}
+                </div>
+                <div class="card-face card-back"></div>
+            `;
+            
+            card.onclick = (e) => handleFlip(card, e);
             board.appendChild(card);
         });
+    }
+
+    // פונקציה ייעודית ללחיצה על הרמקול שתמנע כל אינטראקציה עם הקלף
+    function handleSpeakClick(e, val) {
+        e.preventDefault();
+        e.stopPropagation();
+        speak(val);
     }
 
     function renderScoreboard() {
         const container = document.getElementById('scoreboard-container');
         container.innerHTML = '';
+        if (gameInProgress) container.classList.add('hidden-edit');
+        else container.classList.remove('hidden-edit');
+
         for (let i = 0; i < playerCount; i++) {
             const p = players[i];
             const box = document.createElement('div');
-            box.id = `p${i}-box`;
             box.className = `player-box ${i === currentPlayer ? 'active' : ''}`;
             box.style.color = `var(--p-color-${i})`;
             box.innerHTML = `
                 <div class="name-container">
-                    <span>${p.name}</span>
-                    <span>${p.emoji}</span>
+                    <span>${p.name} ${p.emoji}</span>
                     <span class="edit-btn" onclick="openEditModal(${i})">✏️</span>
                 </div>
                 <div class="score">${scores[i]}</div>
@@ -402,8 +462,17 @@
         }
     }
 
-    function handleFlip(card) {
+    function handleFlip(card, e) {
+        // הגנה נוספת למקרה שהלחיצה הגיעה מהרמקול
+        if (e.target.closest('.speak-trigger')) return;
+        
         if (isLock || flipped.includes(card) || card.classList.contains('matched')) return;
+        
+        if (!gameInProgress) {
+            gameInProgress = true;
+            renderScoreboard();
+        }
+
         card.classList.add('flipped');
         flipped.push(card);
         if (flipped.length === 2) checkMatch();
@@ -432,11 +501,33 @@
     function checkWin() {
         const totalPairs = parseInt(document.getElementById('size-select').value) / 2;
         const totalFound = scores.reduce((a, b) => a + b, 0);
+        
         if (totalFound === totalPairs) {
             confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+            
             let maxScore = Math.max(...scores);
-            let winners = players.filter((p, i) => scores[i] === maxScore).map(p => p.name);
-            setTimeout(() => alert(`הסוף! כל הכבוד ל${winners.join(' ו-')}! 🎉`), 700);
+            let winnerIndices = scores.map((s, i) => s === maxScore ? i : -1).filter(i => i !== -1);
+            let winMessage = "";
+            let speechMessage = "";
+
+            if (winnerIndices.length > 1) {
+                let winnersNames = winnerIndices.map(i => players[i].name).join(' ו-');
+                winMessage = `תיקו! כל הכבוד ל${winnersNames}! 🎉`;
+                speechMessage = `תיקו! ${winnersNames} ניצחתם עם ${maxScore} נקודות!`;
+            } else {
+                let winnerName = players[winnerIndices[0]].name;
+                winMessage = `כל הכבוד ל${winnerName}! 🎉`;
+                let genderVerb = (players[winnerIndices[0]].emoji === '👦') ? "שניצח" : "שניצחה";
+                speechMessage = `כל הכבוד ל${winnerName} ${genderVerb} עם ${maxScore} נקודות!`;
+            }
+
+            gameInProgress = false;
+            renderScoreboard();
+            
+            setTimeout(() => {
+                speak(speechMessage);
+                alert(winMessage);
+            }, 700);
         }
     }
 
