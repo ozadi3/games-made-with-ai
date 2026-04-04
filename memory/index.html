@@ -186,11 +186,10 @@
             font-weight: 900; 
         }
 
-        /* עיצוב משופר לרמקול */
         .speak-trigger {
             position: absolute;
             top: 8px;
-            right: 8px; /* העברתי לימין כדי שלא יתנגש עם הצד של ה-RTL */
+            right: 8px;
             font-size: 1.2rem;
             background: #f0edff;
             border-radius: 50%;
@@ -200,7 +199,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            z-index: 50; /* גבוה מאוד כדי להיות מעל הכל */
+            z-index: 50;
             pointer-events: auto;
         }
 
@@ -266,9 +265,7 @@
         }
     </style>
 </head>
-<body>
-
-    <aside class="sidebar">
+<body onclick="unlockAudio()"> <aside class="sidebar">
         <div class="logo">זיכרון ✨</div>
         <div id="scoreboard-container" class="scoreboard-side"></div>
 
@@ -349,12 +346,30 @@
     let editingIdx = null;
     let tempEmoji = '👦';
     let gameInProgress = false;
+    let audioUnlocked = false;
+
+    // פונקציית פתיחת אודיו לאייפד - חשובה מאוד!
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        const utterance = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(utterance);
+        audioUnlocked = true;
+    }
 
     function speak(text) {
+        // ב-iOS לפעמים צריך לבטל דיבור קודם כדי להתחיל חדש
+        window.speechSynthesis.cancel();
+        
         const word = emojiNames[text] || text;
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'he-IL';
-        utterance.rate = 0.9;
+        utterance.rate = 0.85;
+        
+        // תיקון קטן לאייפד: מציאת קול עברית מפורש אם קיים
+        const voices = window.speechSynthesis.getVoices();
+        const hebrewVoice = voices.find(v => v.lang.includes('he'));
+        if (hebrewVoice) utterance.voice = hebrewVoice;
+
         window.speechSynthesis.speak(utterance);
     }
 
@@ -366,6 +381,7 @@
     }
 
     function initGame() {
+        unlockAudio(); // התנעה נוספת בלחיצה על התחל
         const board = document.getElementById('board');
         const totalCards = parseInt(document.getElementById('size-select').value);
         const category = document.getElementById('category-select').value;
@@ -409,10 +425,10 @@
         });
     }
 
-    // פונקציה ייעודית ללחיצה על הרמקול שתמנע כל אינטראקציה עם הקלף
     function handleSpeakClick(e, val) {
         e.preventDefault();
         e.stopPropagation();
+        unlockAudio();
         speak(val);
     }
 
@@ -463,8 +479,8 @@
     }
 
     function handleFlip(card, e) {
-        // הגנה נוספת למקרה שהלחיצה הגיעה מהרמקול
         if (e.target.closest('.speak-trigger')) return;
+        unlockAudio();
         
         if (isLock || flipped.includes(card) || card.classList.contains('matched')) return;
         
@@ -530,6 +546,11 @@
             }, 700);
         }
     }
+
+    // טעינת קולות מראש עבור דפדפנים מסוימים
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
 
     window.onload = initGame;
 </script>
