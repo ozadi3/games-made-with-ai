@@ -6,8 +6,22 @@
     <title>צביעה קסומה - פלטה מקצועית 🎨✨</title>
     <style>
         :root { --pink: #ff6090; --purple: #a060ff; --blue: #3498db; --red: #ff4757; --ui-bg: rgba(255, 255, 255, 0.98); }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: none; }
-        
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: none; 
+            -webkit-touch-callout: none; /* מונע את התפריט הצף ב-iOS */
+            -webkit-user-select: none;   /* מונע בחירת טקסט */
+            user-select: none;
+        }
+
+        /* אם יש לך שדות טקסט (Input) שבהם כן צריך לבחור טקסט, החרג אותם: */
+        input, textarea {
+            -webkit-touch-callout: default;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
         body { 
             margin: 0; padding: 0; overflow: hidden; 
             font-family: system-ui, sans-serif; 

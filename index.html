@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="manifest.json?v=1.0.0">
+    <link rel="manifest" href="manifest.json?v=1.0.5">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,6 +17,20 @@
             --secondary: #a29bfe;
             --bg: #f8f9fa;
             --accent: #fd79a8;
+        }
+
+        /* ביטול תפריט הקשר בכל האתר */
+        * {
+            -webkit-touch-callout: none; /* מונע את התפריט הצף ב-iOS */
+            -webkit-user-select: none;   /* מונע בחירת טקסט */
+            user-select: none;
+        }
+
+        /* אם יש לך שדות טקסט (Input) שבהם כן צריך לבחור טקסט, החרג אותם: */
+        input, textarea {
+            -webkit-touch-callout: default;
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         body {
@@ -186,7 +200,7 @@
 </head>
 <body>
 
-<div class="version-tag">v1.0.4</div>
+<div class="version-tag">v1.0.5</div>
 
 <header>
     <h1>המשחקים שלי ✨</h1>

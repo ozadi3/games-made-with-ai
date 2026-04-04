@@ -13,6 +13,20 @@
             --glass: rgba(255, 255, 255, 0.9);
         }
 
+         /* ביטול תפריט הקשר בכל האתר */
+         * {
+            -webkit-touch-callout: none; /* מונע את התפריט הצף ב-iOS */
+            -webkit-user-select: none;   /* מונע בחירת טקסט */
+            user-select: none;
+        }
+
+        /* אם יש לך שדות טקסט (Input) שבהם כן צריך לבחור טקסט, החרג אותם: */
+        input, textarea {
+            -webkit-touch-callout: default;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
         body { 
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
             background: radial-gradient(circle at center, #ffffff 0%, #dfe6e9 100%);
