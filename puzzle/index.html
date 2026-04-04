@@ -391,12 +391,13 @@ class Piece {
     draw(context, isGhost = false) {
     context.save();
     
-    // מיקום החלק על המסך (ערכים שלמים למניעת זיוף פיקסלים באייפד)
+    // 1. קביעת מיקום החלק על המסך (חובה להשתמש ב-Math.floor לאייפד)
     const posX = Math.floor(isGhost ? this.targetX : this.x);
     const posY = Math.floor(isGhost ? this.targetY : this.y);
 
     context.translate(posX, posY);
     
+    // 2. יצירת הנתיב (הצורה של הפאזל)
     context.beginPath();
     this.createPath(context);
 
@@ -410,48 +411,31 @@ class Piece {
         return;
     }
 
-    // זה הגבול שחותר את הלשוניות - הוא חייב להיות מדויק
+    // 3. חיתוך לפי הצורה
     context.clip();
 
-    // --- התיקון הקריטי למניעת הכפלת איברים (כמו העין) ---
+    // 4. --- שיטת ה-Global Alignment (פתרון הבעיה) ---
+    // במקום לחתוך "חתיכה" מהתמונה, אנחנו מציירים את כל התמונה 
+    // בגודל המלא של הפאזל על המסך, ומזיזים אותה אחורה 
+    // כך שרק החלק הרלוונטי יופיע בתוך ה-Clip.
     
-    // 1. גודל חלק "נטו" על המסך (בלי לשוניות)
-    const pw = this.pW;
-    const ph = this.pH;
+    const fullPuzzleW = this.pW * this.size;
+    const fullPuzzleH = this.pH * this.size;
     
-    // 2. כמה פיקסלים בתמונה המקורית נכנסים בפיקסל אחד על המסך?
-    // זה היחס (Scale) שחייב להיות זהה לכל חלקי הפאזל
-    const imgScaleX = this.img.width / (this.size * pw);
-    const imgScaleY = this.img.height / (this.size * ph);
-    
-    // 3. מיקום המקור בתמונה (Source) - חישוב לפי אינדקס החלק
-    const sx = this.c * (this.img.width / this.size);
-    const sy = this.r * (this.img.height / this.size);
-    
-    // 4. גודל המקור שנרצה למשוך (כולל השוליים של הלשוניות)
-    // אנחנו לוקחים את ה-tabBuffer ומכפילים אותו ביחס של התמונה
-    const sBufferX = this.tabBuffer * imgScaleX;
-    const sBufferY = this.tabBuffer * imgScaleY;
-    
-    // 5. הגודל הסופי של ה"נתח" מהתמונה המקורית
-    const sWidth = (this.img.width / this.size) + (sBufferX * 2);
-    const sHeight = (this.img.height / this.size) + (sBufferY * 2);
+    // המרחק של החלק הנוכחי מתחילת הפאזל
+    const offsetX = this.c * this.pW;
+    const offsetY = this.r * this.pH;
 
     context.drawImage(
-        this.img,
-        sx - sBufferX,  // התחלה במינוס כדי "לתפוס" את הלשונית השמאלית
-        sy - sBufferY,  // התחלה במינוס כדי "לתפוס" את הלשונית העליונה
-        sWidth, 
-        sHeight,
-        -this.tabBuffer, // ציור במינוס בקנבס כדי שהלשונית תבלוט החוצה מה-0,0 של החלק
-        -this.tabBuffer, 
-        pw + (this.tabBuffer * 2), 
-        ph + (this.tabBuffer * 2)
+        this.img, 
+        0, 0, this.img.width, this.img.height, // המקור הוא תמיד כל התמונה
+        -offsetX, -offsetY, fullPuzzleW, fullPuzzleH // היעד מוסט אחורה
     );
 
     context.restore();
 }
-    resetPosition() {
+
+resetPosition() {
     const padding = 20; // מרווח מהקצוות
     const puzzleLeft = puzzleOffset.x;
     const puzzleRight = puzzleOffset.x + puzzleSize.w;
