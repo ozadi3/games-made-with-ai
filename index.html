@@ -38,6 +38,8 @@
             text-align: center;
         }
 
+        
+
         h1 {
             font-size: clamp(2rem, 8vw, 3.5rem); /* גודל פונט גמיש למובייל */
             margin-bottom: 10px;
@@ -48,6 +50,29 @@
         header p {
             font-size: clamp(1rem, 4vw, 1.2rem);
             opacity: 0.8;
+        }
+
+        .version-tag {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.1); /* רקע כמעט שקוף */
+            color: #636e72;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: monospace;
+            pointer-events: none; /* שלא יפריע ללחיצות */
+            z-index: 9999;
+            backdrop-filter: blur(4px); /* אפקט זכוכית עדין */
+        }
+
+        /* התאמה למכשירים עם מגרעת (Notch) כמו אייפון */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .version-tag {
+                top: calc(env(safe-area-inset-top) + 5px);
+                left: calc(env(safe-area-inset-left) + 10px);
+            }
         }
 
         .games-grid {
@@ -160,6 +185,8 @@
     </style>
 </head>
 <body>
+
+<div class="version-tag">v1.0.4</div>
 
 <header>
     <h1>המשחקים שלי ✨</h1>
