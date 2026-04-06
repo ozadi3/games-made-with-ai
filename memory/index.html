@@ -71,6 +71,7 @@
             transition: all 0.3s ease;
             opacity: 0.5;
             background: #f8f9fa;
+            position: relative;
         }
 
         .player-box.active {
@@ -92,6 +93,24 @@
             font-size: 0.9rem;
             margin-bottom: 5px;
         }
+
+        /* עיצוב כפתור רמז משופר לילדים */
+        .hint-btn {
+            background: #fff;
+            border: 2px solid #ffd32a;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 5px;
+            color: #ffa801;
+            display: inline-block;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 3px 0 #ffd32a;
+        }
+        .hint-btn:active { transform: translateY(2px); box-shadow: none; }
+        .hint-btn.used { opacity: 0.2; cursor: default; filter: grayscale(1); box-shadow: none; }
 
         .edit-btn {
             font-size: 11px;
@@ -163,7 +182,19 @@
             cursor: pointer;
         }
 
-        .card.flipped { transform: rotateY(180deg); }
+        .card.flipped, .card.xray { transform: rotateY(180deg); }
+        
+        /* אפקט רמז "קסום" */
+        .card.xray { 
+            opacity: 0.8; 
+            pointer-events: none; 
+            animation: magic-pulse 0.6s infinite alternate;
+        }
+
+        @keyframes magic-pulse {
+            from { transform: rotateY(180deg) scale(1); }
+            to { transform: rotateY(180deg) scale(1.03); }
+        }
 
         .card-face {
             position: absolute;
@@ -258,7 +289,7 @@
             .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; }
             .logo, .controls label { display: none; }
             .scoreboard-side { flex-direction: row; flex-grow: 1; margin: 0; gap: 5px; overflow-x: auto; }
-            .player-box { padding: 5px; flex: 1; min-width: 80px; }
+            .player-box { padding: 5px; flex: 1; min-width: 100px; }
             .score { font-size: 1.2rem; }
             .controls { flex-direction: row; border: none; padding: 0; gap: 5px; }
             .main-area { padding: 10px; }
@@ -318,24 +349,24 @@
 
 <script>
     const emojiNames = {
-        '🍕':'פיצה','🍔':'המבורגר','🍟':'צ׳יפס','🍎':'תפוח','🍦':'גלידה','🍩':'דונאט','🥑':'אבוקדו','🥨':'פרצלה','🍓':'תות',' sushi':'סושי','🥞':'פנקייק','🍉':'אבטיח','🌽':'תירס','🥕':'גזר','🌮':'טאקו','🥪':'סנדוויץ׳','🍳':'ביצה','🍿':'פופקורן',
+        '🍕':'פיצה','🍔':'המבורגר','🍟':'צ׳יפס','🍎':'תא-פוח','🍦':'גלידה','🍩':'דונאט','🥑':'אבוקדו','🥨':'בייגלה','🍓':'תות','🍣':'סושי','🥞':'פנקייק','🍉':'אבטיח','🌽':'תירס','🥕':'גה-זר','🌮':'טא-קו','🥪':'סנדוויץ׳','🍳':'ביצה','🍿':'פופקורן',
         '🤖':'רובוט','🦄':'חד קרן','🦁':'אריה','🦖':'דינוזאור','🐙':'תמנון','🐸':'צפרדע','🐼':'פנדה','🐵':'קוף','👻':'רוח רפאים','👽':'חייזר','🧜‍♀️':'בת הים','🧚‍♂️':'פיה','🦋':'פרפר','🐱':'חתול','🐶':'כלב','🐰':'ארנב','🦊':'שועל','🐯':'נמר',
         '🏠':'בית','🛋️':'ספה','🛏️':'מיטה','🪑':'כיסא','🛀':'אמבטיה','📺':'טלוויזיה','🧺':'סל כביסה','🪞':'מראה','🚪':'דלת','🏮':'מנורה','📚':'ספרים','🪴':'עציץ','🕯️':'נר','⏰':'שעון','🛁':'אמבט','🧱':'לבנים','🔭':'טלסקופ','🚿':'מקלחת'
     };
 
     const data = {
         foods: ['🍕','🍔','🍟','🍎','🍦','🍩','🥑','🥨','🍓','🍣','🥞','🍉','🌽','🥕','🌮','🥪','🍳','🍿'],
-        characters: ['🤖','🦄','🦁','REX','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱','🐶','🐰','🦊','🐯'],
+        characters: ['🤖','🦄','🦁','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱','🐶','🐰','🦊','🐯'],
         furniture: ['🏠','🛋️','🛏️','🪑','🛀','📺','🧺','🪞','🚪','🏮','📚','🪴','🕯️','⏰','🛁','🧱','🔭','🚿'],
         letters: ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'],
         numbers: ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18']
     };
 
     let players = JSON.parse(localStorage.getItem('memory_players_v4')) || [
-        { name: 'שחקן 1', emoji: '👦' },
-        { name: 'שחקנית 2', emoji: '👧' },
-        { name: 'שחקן 3', emoji: '👦' },
-        { name: 'שחקנית 4', emoji: '👧' }
+        { name: 'שחקן 1', emoji: '👦', hintUsed: false },
+        { name: 'שחקנית 2', emoji: '👧', hintUsed: false },
+        { name: 'שחקן 3', emoji: '👦', hintUsed: false },
+        { name: 'שחקנית 4', emoji: '👧', hintUsed: false }
     ];
 
     let playerCount = parseInt(localStorage.getItem('memory_player_count')) || 2;
@@ -348,7 +379,6 @@
     let gameInProgress = false;
     let audioUnlocked = false;
 
-    // פונקציית פתיחת אודיו לאייפד - חשובה מאוד!
     function unlockAudio() {
         if (audioUnlocked) return;
         const utterance = new SpeechSynthesisUtterance("");
@@ -356,20 +386,46 @@
         audioUnlocked = true;
     }
 
+    function playSuccessSound() {
+    if (!audioUnlocked) return;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // צליל ראשון (נמוך)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+    gain1.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start();
+    osc1.stop(ctx.currentTime + 0.2);
+
+    // צליל שני (גבוה יותר - יוצר תחושת הצלחה)
+    setTimeout(() => {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        gain2.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.3);
+    }, 100);
+}
+
     function speak(text) {
-        // ב-iOS לפעמים צריך לבטל דיבור קודם כדי להתחיל חדש
         window.speechSynthesis.cancel();
-        
         const word = emojiNames[text] || text;
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'he-IL';
         utterance.rate = 0.85;
-        
-        // תיקון קטן לאייפד: מציאת קול עברית מפורש אם קיים
         const voices = window.speechSynthesis.getVoices();
         const hebrewVoice = voices.find(v => v.lang.includes('he'));
         if (hebrewVoice) utterance.voice = hebrewVoice;
-
         window.speechSynthesis.speak(utterance);
     }
 
@@ -381,55 +437,79 @@
     }
 
     function initGame() {
-        unlockAudio(); // התנעה נוספת בלחיצה על התחל
-        const board = document.getElementById('board');
-        const totalCards = parseInt(document.getElementById('size-select').value);
-        const category = document.getElementById('category-select').value;
+    unlockAudio();
+    const board = document.getElementById('board');
+    const totalCards = parseInt(document.getElementById('size-select').value);
+    const category = document.getElementById('category-select').value;
+    
+    board.innerHTML = '';
+    flipped = [];
+    scores = new Array(playerCount).fill(0);
+    players.forEach(p => p.hintUsed = false);
+    currentPlayer = 0;
+    isLock = false;
+    gameInProgress = false;
+    
+    renderScoreboard();
+
+    // קביעת כמות עמודות לפי כמות קלפים
+    let cols = 4;
+    if (totalCards >= 36) cols = 9;
+    else if (totalCards >= 30) cols = 6;
+    else if (totalCards >= 20) cols = 5;
+    board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+    // --- לוגיקת ההגרלה החדשה ---
+    const selectedSet = [...(data[category] || data.foods)];
+    
+    // 1. ערבוב כל הקטגוריה כדי שלא תמיד ייבחרו אותם אימוג'ים
+    const shuffledFullSet = selectedSet.sort(() => Math.random() - 0.5);
+    
+    // 2. בחירת כמות הזוגות הדרושה מתוך הסט המעורבב
+    let items = shuffledFullSet.slice(0, totalCards / 2);
+    
+    // 3. הכפלה לזוגות וערבוב סופי של הלוח
+    items = [...items, ...items].sort(() => Math.random() - 0.5);
+    // ----------------------------
+
+    items.forEach((val) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.val = val;
+        card.innerHTML = `
+            <div class="card-face card-front">
+                <div class="speak-trigger" onclick="handleSpeakClick(event, '${val}')">📢</div>
+                ${val}
+            </div>
+            <div class="card-face card-back"></div>
+        `;
+        card.onclick = (e) => handleFlip(card, e);
+        board.appendChild(card);
+    });
+}
+    // פונקציית הרמז המותאמת לילד בן 4
+    function useHint(playerIdx) {
+        if (isLock || flipped.length > 0 || players[playerIdx].hintUsed || playerIdx !== currentPlayer) return;
         
-        document.getElementById('player-count-select').value = playerCount;
-        board.innerHTML = '';
-        flipped = [];
-        scores = new Array(playerCount).fill(0);
-        currentPlayer = 0;
-        isLock = false;
-        gameInProgress = false;
-        
+        isLock = true;
+        players[playerIdx].hintUsed = true;
         renderScoreboard();
 
-        let cols = 4;
-        if (totalCards >= 36) cols = 9;
-        else if (totalCards >= 30) cols = 6;
-        else if (totalCards >= 20) cols = 5;
-        
-        board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        // תוספת קולית לרמז
+        speak("הוקוס פוקוס!");
 
-        const selectedSet = data[category] || data.foods;
-        let items = [...selectedSet].slice(0, totalCards / 2);
-        items = [...items, ...items].sort(() => Math.random() - 0.5);
+        const cards = document.querySelectorAll('.card:not(.matched)');
+        cards.forEach(c => c.classList.add('xray'));
 
-        items.forEach((val) => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.dataset.val = val;
-            
-            card.innerHTML = `
-                <div class="card-face card-front">
-                    <div class="speak-trigger" onclick="handleSpeakClick(event, '${val}')">📢</div>
-                    ${val}
-                </div>
-                <div class="card-face card-back"></div>
-            `;
-            
-            card.onclick = (e) => handleFlip(card, e);
-            board.appendChild(card);
-        });
+        setTimeout(() => {
+            cards.forEach(c => c.classList.remove('xray'));
+            isLock = false;
+        }, 2500); // 2.5 שניות - זמן מורחב לילדים
     }
 
     function handleSpeakClick(e, val) {
-        e.preventDefault();
-        e.stopPropagation();
-        unlockAudio();
-        speak(val);
+        e.preventDefault(); e.stopPropagation();
+        unlockAudio(); speak(val);
     }
 
     function renderScoreboard() {
@@ -449,6 +529,7 @@
                     <span class="edit-btn" onclick="openEditModal(${i})">✏️</span>
                 </div>
                 <div class="score">${scores[i]}</div>
+                <div class="hint-btn ${p.hintUsed ? 'used' : ''}" onclick="event.stopPropagation(); useHint(${i})">🪄 קסם!</div>
             `;
             container.appendChild(box);
         }
@@ -479,10 +560,8 @@
     }
 
     function handleFlip(card, e) {
-        if (e.target.closest('.speak-trigger')) return;
+        if (e.target.closest('.speak-trigger') || isLock || flipped.includes(card) || card.classList.contains('matched')) return;
         unlockAudio();
-        
-        if (isLock || flipped.includes(card) || card.classList.contains('matched')) return;
         
         if (!gameInProgress) {
             gameInProgress = true;
@@ -499,6 +578,7 @@
         const [c1, c2] = flipped;
         if (c1.dataset.val === c2.dataset.val) {
             scores[currentPlayer]++;
+            playSuccessSound();
             setTimeout(() => {
                 c1.classList.add('matched'); c2.classList.add('matched');
                 isLock = false; flipped = [];
@@ -520,7 +600,6 @@
         
         if (totalFound === totalPairs) {
             confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-            
             let maxScore = Math.max(...scores);
             let winnerIndices = scores.map((s, i) => s === maxScore ? i : -1).filter(i => i !== -1);
             let winMessage = "";
@@ -539,19 +618,11 @@
 
             gameInProgress = false;
             renderScoreboard();
-            
-            setTimeout(() => {
-                speak(speechMessage);
-                alert(winMessage);
-            }, 700);
+            setTimeout(() => { speak(speechMessage); alert(winMessage); }, 700);
         }
     }
 
-    // טעינת קולות מראש עבור דפדפנים מסוימים
-    window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-    };
-
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
     window.onload = initGame;
 </script>
 </body>
