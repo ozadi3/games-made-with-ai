@@ -417,15 +417,16 @@
     }, 100);
 }
 
-    function speak(text) {
+    function speak(text, lang = 'he-IL') {
         window.speechSynthesis.cancel();
         const word = emojiNames[text] || text;
         const utterance = new SpeechSynthesisUtterance(word);
-        utterance.lang = 'he-IL';
+        utterance.lang = lang;
         utterance.rate = 0.85;
         const voices = window.speechSynthesis.getVoices();
         const hebrewVoice = voices.find(v => v.lang.includes('he'));
-        if (hebrewVoice) utterance.voice = hebrewVoice;
+        const englishVoice = voices.find(v => v.lang.includes('en'));
+        utterance.voice = lang === 'he-IL' ? hebrewVoice : englishVoice;
         window.speechSynthesis.speak(utterance);
     }
 
@@ -496,7 +497,7 @@
         renderScoreboard();
 
         // תוספת קולית לרמז
-        speak("הוקוס פוקוס!");
+        speak("hocus pocus!", "eng-US");
 
         const cards = document.querySelectorAll('.card:not(.matched)');
         cards.forEach(c => c.classList.add('xray'));

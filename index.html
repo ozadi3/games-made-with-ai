@@ -19,18 +19,12 @@
             --accent: #fd79a8;
         }
 
-        /* ביטול תפריט הקשר בכל האתר */
+        /* ביטול תפריט הקשר ובחירה */
         * {
-            -webkit-touch-callout: none; /* מונע את התפריט הצף ב-iOS */
-            -webkit-user-select: none;   /* מונע בחירת טקסט */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
             user-select: none;
-        }
-
-        /* אם יש לך שדות טקסט (Input) שבהם כן צריך לבחור טקסט, החרג אותם: */
-        input, textarea {
-            -webkit-touch-callout: default;
-            -webkit-user-select: text;
-            user-select: text;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -44,7 +38,6 @@
             color: #2d3436;
             padding-bottom: 40px;
             padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
         }
 
         header {
@@ -52,10 +45,8 @@
             text-align: center;
         }
 
-        
-
         h1 {
-            font-size: clamp(2rem, 8vw, 3.5rem); /* גודל פונט גמיש למובייל */
+            font-size: clamp(2rem, 8vw, 3.5rem);
             margin-bottom: 10px;
             color: var(--primary);
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
@@ -70,28 +61,17 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.1); /* רקע כמעט שקוף */
+            background: rgba(0, 0, 0, 0.1);
             color: #636e72;
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 12px;
-            font-family: monospace;
-            pointer-events: none; /* שלא יפריע ללחיצות */
             z-index: 9999;
-            backdrop-filter: blur(4px); /* אפקט זכוכית עדין */
-        }
-
-        /* התאמה למכשירים עם מגרעת (Notch) כמו אייפון */
-        @supports (padding-top: env(safe-area-inset-top)) {
-            .version-tag {
-                top: calc(env(safe-area-inset-top) + 5px);
-                left: calc(env(safe-area-inset-left) + 10px);
-            }
+            backdrop-filter: blur(4px);
         }
 
         .games-grid {
             display: grid;
-            /* התאמה אוטומטית של עמודות לפי רוחב המסך */
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 25px;
             width: 90%;
@@ -112,7 +92,6 @@
             border: 1px solid rgba(255,255,255,0.3);
         }
 
-        /* אפקט ריחוף (עובד גם בלחיצה ארוכה במובייל) */
         .game-card:active, .game-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.15);
@@ -126,20 +105,10 @@
             justify-content: center;
             align-items: center;
             font-size: 5rem;
-            transition: transform 0.3s ease;
-        }
-        
-        .game-card:hover .game-img {
-            transform: scale(1.05);
         }
 
-        .coloring-bg {
-            background: linear-gradient(45deg, #ffeaa7, var(--accent));
-        }
-
-        .memory-bg {
-            background: linear-gradient(45deg, #fd79a8, var(--accent));
-        }
+        .coloring-bg { background: linear-gradient(45deg, #ffeaa7, var(--accent)); }
+        .memory-bg { background: linear-gradient(45deg, #fd79a8, var(--accent)); }
 
         .game-info {
             padding: 24px;
@@ -150,19 +119,6 @@
             justify-content: space-between;
         }
 
-        .game-info h2 {
-            margin: 0 0 12px 0;
-            color: var(--primary);
-            font-size: 1.6rem;
-        }
-
-        .game-info p {
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 20px;
-            color: #636e72;
-        }
-
         .btn-play {
             display: inline-block;
             padding: 12px 30px;
@@ -171,35 +127,38 @@
             border-radius: 50px;
             font-weight: bold;
             font-size: 1.1rem;
-            transition: background 0.3s ease;
-            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
         }
 
-        .game-card:hover .btn-play {
-            background: #5649c0;
+        /* עיצוב באנר ההתקנה */
+        #pwa-install-container {
+            display: none;
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 10000;
+            align-items: center;
+            gap: 15px;
+            border: 2px solid var(--primary);
+            min-width: 300px;
+            justify-content: space-between;
         }
 
-        .coming-soon {
-            opacity: 0.7;
-            filter: grayscale(0.8);
-            cursor: not-allowed;
-            pointer-events: none;
+        #btn-install-android {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
-        /* התאמות ספציפיות לאייפד/טאבלט */
-        @media (max-width: 768px) {
-            .games-grid {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-            }
-            header { padding: 30px 15px; }
-        }
-
-        /* מניעת בחירת טקסט בזמן לחיצה על כרטיסיות (חוויית אפליקציה) */
-        .game-card {
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
+        .coming-soon { opacity: 0.7; filter: grayscale(0.8); cursor: not-allowed; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -228,7 +187,7 @@
         <div class="game-info">
             <div>
                 <h2>עולם הצביעה</h2>
-                <p>בוחרים ציור, מפעילים את הדמיון וצובעים בכל צבעי הקשת. חוויה יצירתית לילדים.</p>
+                <p>בוחרים ציור, מפעילים את הדמיון וצובעים בכל צבעי הקשת.</p>
             </div>
             <div class="btn-play">צבע עכשיו</div>
         </div>
@@ -250,12 +209,73 @@
         <div class="game-info">
             <div>
                 <h2>בקרוב...</h2>
-                <p>אנחנו עובדים על עוד הפתעות בשבילך. שווה לחכות!</p>
+                <p>אנחנו עובדים על עוד הפתעות בשבילך.</p>
             </div>
             <div class="btn-play">נעול</div>
         </div>
     </div>
 </div>
+
+<div id="pwa-install-container">
+    <span style="font-weight: bold; font-size: 0.9rem;">להוסיף למסך הבית? 📱</span>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button id="btn-install-android">התקן</button>
+        <span id="btn-close-pwa" style="cursor: pointer; padding: 5px; color: #999; font-size: 1.2rem;">✕</span>
+    </div>
+</div>
+
+<script>
+    // לוגיקת PWA לאנדרואיד
+    let deferredPrompt;
+    const installContainer = document.getElementById('pwa-install-container');
+    const installBtn = document.getElementById('btn-install-android');
+    const closeBtn = document.getElementById('btn-close-pwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // מונע מהדפדפן להקפיץ את הבאנר האוטומטי
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // מציג את הבאנר שלנו אחרי 3 שניות של גלישה
+        setTimeout(() => {
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                installContainer.style.display = 'flex';
+            }
+        }, 3000);
+    });
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response: ${outcome}`);
+            deferredPrompt = null;
+            installContainer.style.display = 'none';
+        }
+    });
+
+    closeBtn.onclick = () => {
+        installContainer.style.display = 'none';
+    };
+
+    // רישום Service Worker (חובה בשביל אנדרואיד)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                console.log('Service Worker registered!');
+            }).catch(err => {
+                console.log('Registration failed:', err);
+            });
+        });
+    }
+
+    // מניעת מחוות זום בלחיצה כפולה (למובייל)
+    document.addEventListener('touchstart', function (event) {
+        if (event.touches.length > 1) {
+            event.preventDefault();
+        }
+    }, { passive: false });
+</script>
 
 </body>
 </html>
