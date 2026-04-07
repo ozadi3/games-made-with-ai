@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק הכמויות המושלם ✨</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --success: #00b894;
+            --error: #ff7675;
+            --accent: #fd79a8;
+        }
+
+        /* מניעת גלילה */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #f8f9fc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+
+        /* כפתור בית */
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+            text-decoration: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .home-button:hover {
+            transform: scale(1.1);
+            background: var(--primary);
+            color: white;
+        }
+
+        h1 { 
+            color: var(--primary); 
+            margin: 10px 0; 
+            font-size: clamp(1.5rem, 4vh, 2.2rem); 
+        }
+
+        .controls {
+            background: white;
+            padding: 8px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        select {
+            padding: 6px 15px;
+            font-size: 16px;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .game-board {
+            display: flex;
+            gap: 8vw;
+            width: 100%;
+            max-width: 1100px;
+            justify-content: center;
+            align-items: stretch;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .column { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            flex: 1; 
+            min-height: 0;
+        }
+
+        .image-group {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(35px, 5vw), 1fr));
+            gap: 5px;
+            padding: 10px;
+            cursor: grab;
+            transition: transform 0.2s;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 20px;
+            align-content: center;
+            justify-items: center;
+            min-height: 0;
+        }
+
+        .image-group:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .emoji-unit {
+            line-height: 1;
+            display: inline-block;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1));
+        }
+
+        .drop-zone {
+            flex: 1;
+            background: white;
+            border: 3px solid #eee;
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            transition: all 0.3s;
+            min-height: 0;
+        }
+
+        .drop-zone.hover { 
+            border-color: var(--primary);
+            background: #f3f0ff;
+            transform: scale(1.03);
+        }
+
+        .drop-zone.error-shake {
+            border-color: var(--error);
+            background: #fff5f5;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+
+        .drop-zone.matched {
+            background: var(--success);
+            border-color: #55efc4;
+            color: white;
+        }
+
+        .number-text { 
+            font-size: clamp(2rem, 7vh, 3.5rem); 
+            font-weight: 800; 
+            line-height: 1;
+        }
+        
+        .speak-btn {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 0 #d63031;
+        }
+
+        .hidden { visibility: hidden; pointer-events: none; }
+
+        .btn-refresh {
+            margin: 15px 0;
+            padding: 12px 40px;
+            font-size: 18px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 0 #5849c4;
+        }
+
+        @media (max-width: 600px) {
+            .home-button { width: 50px; height: 50px; font-size: 24px; top: 15px; left: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
+
+    <h1>משחק הכמויות שלי ✨</h1>
+
+    <div class="controls">
+        <span>רמת קושי:</span>
+        <select id="rangeSelect" onchange="renderGame()">
+            <option value="10">קל (1-10)</option>
+            <option value="20">בינוני (1-20)</option>
+            <option value="50">קשה (1-50)</option>
+            <option value="100">מאתגר (1-100)</option>
+        </select>
+    </div>
+    
+    <div class="game-board">
+        <div class="column" id="items-column"></div>
+        <div class="column" id="targets-column"></div>
+    </div>
+
+    <button class="btn-refresh" onclick="renderGame()">משחק חדש 🔄</button>
+
+    <audio id="successSound"><source src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg"></audio>
+
+    <script>
+        const emojiPool = [
+            { icon: "🍓", name: "תות", plural: "תותים", gender: "m" },
+            { icon: "🦊", name: "שועל", plural: "שועלים", gender: "m" },
+            { icon: "🚀", name: "חללית", plural: "חלליות", gender: "f" },
+            { icon: "🦖", name: "דינוזאור", plural: "דינוזאורים", gender: "m" },
+            { icon: "🍩", name: "דונאט", plural: "דונאטס", gender: "m" },
+            { icon: "🐠", name: "דג", plural: "דגים", gender: "m" },
+            { icon: "🌈", name: "קשת", plural: "קשתות", gender: "f" },
+            { icon: "⚽", name: "כדור", plural: "כדורים", gender: "m" },
+            { icon: "🦁", name: "אריה", plural: "אריות", gender: "m" },
+            { icon: "🚗", name: "מכונית", plural: "מכוניות", gender: "f" }
+        ];
+
+        function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+        function speakQuantity(count, item) {
+            let text = "";
+            if (count === 1) {
+                text = `${item.name} ${item.gender === 'm' ? 'אחד' : 'אחת'}`;
+            } else if (count === 2) {
+                text = `${item.gender === 'm' ? 'שני' : 'שתי'} ${item.plural}`;
+            } else {
+                text = `${count} ${item.plural}`;
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'he-IL';
+            utterance.rate = 0.85;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function renderGame() {
+            const maxRange = parseInt(document.getElementById('rangeSelect').value);
+            const itemsCol = document.getElementById('items-column');
+            const targetsCol = document.getElementById('targets-column');
+            itemsCol.innerHTML = '';
+            targetsCol.innerHTML = '';
+
+            const numRows = 5;
+            const selectedEmojis = shuffle([...emojiPool]).slice(0, numRows);
+            const availableNumbers = Array.from({length: maxRange}, (_, i) => i + 1);
+            const shuffledNums = shuffle(availableNumbers).slice(0, numRows);
+
+            const gameState = selectedEmojis.map((item, index) => ({
+                id: index, ...item, count: shuffledNums[index]
+            }));
+
+            // טור הציורים
+            shuffle([...gameState]).forEach(item => {
+                const group = document.createElement('div');
+                group.className = 'image-group';
+                group.draggable = true;
+                group.id = `group-${item.id}`;
+                let fontSize = item.count > 50 ? '16px' : item.count > 20 ? '22px' : '35px';
+                for(let i = 0; i < item.count; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'emoji-unit';
+                    span.style.fontSize = fontSize;
+                    span.textContent = item.icon;
+                    group.appendChild(span);
+                }
+                group.ondragstart = (e) => e.dataTransfer.setData('text', item.id);
+                itemsCol.appendChild(group);
+            });
+
+            // טור המספרים
+            shuffle([...gameState]).forEach(item => {
+                const zone = document.createElement('div');
+                zone.className = 'drop-zone';
+                zone.dataset.id = item.id;
+                zone.innerHTML = `
+                    <button class="speak-btn">🔊</button>
+                    <div class="number-text">${item.count}</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; opacity: 0.7;">${item.count === 1 ? item.name : item.plural}</div>
+                `;
+                zone.querySelector('.speak-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    speakQuantity(item.count, item);
+                };
+                zone.ondragover = (e) => e.preventDefault();
+                zone.ondragenter = () => zone.classList.add('hover');
+                zone.ondragleave = () => zone.classList.remove('hover');
+                zone.ondrop = (e) => {
+                    zone.classList.remove('hover');
+                    const draggedId = e.dataTransfer.getData('text');
+                    if(draggedId == zone.dataset.id) handleWin(draggedId, zone);
+                    else handleError(zone);
+                };
+                targetsCol.appendChild(zone);
+            });
+        }
+
+        function handleWin(id, zone) {
+            document.getElementById('successSound').play();
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.8 } });
+            zone.classList.add('matched');
+            zone.innerHTML = "<span style='font-size:clamp(3rem, 10vh, 5rem)'>🌟</span>";
+            document.getElementById(`group-${id}`).classList.add('hidden');
+        }
+
+        function handleError(zone) {
+            document.getElementById('errorSound').play();
+            zone.classList.add('error-shake');
+            setTimeout(() => zone.classList.remove('error-shake'), 400);
+        }
+
+        renderGame();
+    </script>
+</body>
+</html>
