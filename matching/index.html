@@ -14,12 +14,15 @@
             --accent: #fd79a8;
         }
 
-        /* מניעת גלילה */
+        /* מניעת גלילה וחסימת העתקה */
         html, body {
             height: 100%;
             margin: 0;
             overflow: hidden;
             touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         body {
@@ -89,7 +92,7 @@
             align-content: center;
             justify-items: center;
             min-height: 0;
-            touch-action: none;
+            touch-action: none; /* קריטי לגרירה באייפד */
         }
 
         .image-group:active { cursor: grabbing; }
@@ -211,7 +214,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
 
@@ -238,7 +241,6 @@
     <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg"></audio>
 
     <script>
-        // נוספו נתוני דקדוק לכל פריט
         const emojiPool = [
             { icon: "🍓", name: "תותים", singular: "תות", gender: "m" },
             { icon: "🦊", name: "שועלים", singular: "שועל", gender: "m" },
@@ -255,21 +257,22 @@
         function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
         function speakCorrectHebrew(count, item) {
-            let text = "";
-            if (count === 1) {
-                // "תות אחד" או "מכונית אחת"
-                text = `${item.singular} ${item.gender === 'm' ? 'אחד' : 'אחת'}`;
-            } else if (count === 2) {
-                // "שני שועלים" או "שתי חלליות"
-                text = `${item.gender === 'm' ? 'שני' : 'שתי'} ${item.name}`;
-            } else {
-                // "חמישה תותים" - מנוע הדיבור בדרך כלל יודע להסתדר עם מספרים מעל 2
-                text = `${count} ${item.name}`;
-            }
+            window.speechSynthesis.cancel();
+            
+            const maleNumbers = { 1: "אחד", 2: "שני", 3: "שלושה", 4: "ארבעה", 5: "חמישה", 6: "שישה", 7: "שבעה", 8: "שמונה", 9: "תשעה", 10: "עשרה" };
+            const femaleNumbers = { 1: "אחת", 2: "שתי", 3: "שלוש", 4: "ארבע", 5: "חמש", 6: "שש", 7: "שבע", 8: "שמונה", 9: "תשע", 10: "עשר" };
+
+            let countText = (count <= 10) ? (item.gender === 'm' ? maleNumbers[count] : femaleNumbers[count]) : count;
+            let text = count === 1 ? `${item.singular} ${countText}` : `${countText} ${item.name}`;
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'he-IL';
             utterance.rate = 0.85;
+
+            const voices = window.speechSynthesis.getVoices();
+            const hebrewVoice = voices.find(v => v.lang.includes('he') || v.lang.includes('he-IL'));
+            if (hebrewVoice) utterance.voice = hebrewVoice;
+
             window.speechSynthesis.speak(utterance);
         }
 
@@ -277,7 +280,6 @@
             const maxRange = parseInt(document.getElementById('rangeSelect').value);
             const itemsCol = document.getElementById('items-column');
             const targetsCol = document.getElementById('targets-column');
-            
             itemsCol.innerHTML = '';
             targetsCol.innerHTML = '';
 
@@ -303,7 +305,6 @@
                 group.id = `group-${item.id}`;
                 
                 let fontSize = item.count > 50 ? '16px' : item.count > 20 ? '22px' : '35px';
-
                 for(let i = 0; i < item.count; i++) {
                     const span = document.createElement('span');
                     span.className = 'emoji-unit';
@@ -322,7 +323,6 @@
                 zone.className = 'drop-zone';
                 zone.dataset.id = item.id;
                 
-                // תצוגת טקסט חכמה מתחת למספר
                 const label = item.count === 1 ? item.singular : item.name;
 
                 zone.innerHTML = `
@@ -361,6 +361,12 @@
             document.getElementById('errorSound').play();
             zone.classList.add('error-shake');
             setTimeout(() => { zone.classList.remove('error-shake'); }, 400);
+        }
+
+        // טעינת קולות ל-Safari/iPad
+        window.speechSynthesis.getVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
 
         renderGame();
