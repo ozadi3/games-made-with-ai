@@ -2,8 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>משחק הכמויות המושלם ✨</title>
+    <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch@1.1.0/DragDropTouch.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -18,6 +19,7 @@
             height: 100%;
             margin: 0;
             overflow: hidden;
+            touch-action: manipulation;
         }
 
         body {
@@ -28,35 +30,6 @@
             align-items: center;
             padding: 10px 20px;
             box-sizing: border-box;
-        }
-
-        /* כפתור בית */
-        .home-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1001;
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--primary);
-            text-decoration: none;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            border: 2px solid var(--primary);
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .home-button:hover {
-            transform: scale(1.1);
-            background: var(--primary);
-            color: white;
         }
 
         h1 { 
@@ -116,7 +89,10 @@
             align-content: center;
             justify-items: center;
             min-height: 0;
+            touch-action: none;
         }
+
+        .image-group:active { cursor: grabbing; }
 
         .image-group:hover {
             transform: scale(1.05);
@@ -127,6 +103,7 @@
             line-height: 1;
             display: inline-block;
             filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1));
+            pointer-events: none;
         }
 
         .drop-zone {
@@ -208,6 +185,27 @@
             box-shadow: 0 5px 0 #5849c4;
         }
 
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--primary);
+            text-decoration: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid var(--primary);
+            cursor: pointer;
+        }
+
         @media (max-width: 600px) {
             .home-button { width: 50px; height: 50px; font-size: 24px; top: 15px; left: 15px; }
         }
@@ -240,30 +238,35 @@
     <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg"></audio>
 
     <script>
+        // נוספו נתוני דקדוק לכל פריט
         const emojiPool = [
-            { icon: "🍓", name: "תות", plural: "תותים", gender: "m" },
-            { icon: "🦊", name: "שועל", plural: "שועלים", gender: "m" },
-            { icon: "🚀", name: "חללית", plural: "חלליות", gender: "f" },
-            { icon: "🦖", name: "דינוזאור", plural: "דינוזאורים", gender: "m" },
-            { icon: "🍩", name: "דונאט", plural: "דונאטס", gender: "m" },
-            { icon: "🐠", name: "דג", plural: "דגים", gender: "m" },
-            { icon: "🌈", name: "קשת", plural: "קשתות", gender: "f" },
-            { icon: "⚽", name: "כדור", plural: "כדורים", gender: "m" },
-            { icon: "🦁", name: "אריה", plural: "אריות", gender: "m" },
-            { icon: "🚗", name: "מכונית", plural: "מכוניות", gender: "f" }
+            { icon: "🍓", name: "תותים", singular: "תות", gender: "m" },
+            { icon: "🦊", name: "שועלים", singular: "שועל", gender: "m" },
+            { icon: "🚀", name: "חלליות", singular: "חללית", gender: "f" },
+            { icon: "🦖", name: "דינוזאורים", singular: "דינוזאור", gender: "m" },
+            { icon: "🍩", name: "דונאטס", singular: "דונאט", gender: "m" },
+            { icon: "🐠", name: "דגים", singular: "דג", gender: "m" },
+            { icon: "🌈", name: "קשתות", singular: "קשת", gender: "f" },
+            { icon: "⚽", name: "כדורים", singular: "כדור", gender: "m" },
+            { icon: "🦁", name: "אריות", singular: "אריה", gender: "m" },
+            { icon: "🚗", name: "מכוניות", singular: "מכונית", gender: "f" }
         ];
 
         function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
-        function speakQuantity(count, item) {
+        function speakCorrectHebrew(count, item) {
             let text = "";
             if (count === 1) {
-                text = `${item.name} ${item.gender === 'm' ? 'אחד' : 'אחת'}`;
+                // "תות אחד" או "מכונית אחת"
+                text = `${item.singular} ${item.gender === 'm' ? 'אחד' : 'אחת'}`;
             } else if (count === 2) {
-                text = `${item.gender === 'm' ? 'שני' : 'שתי'} ${item.plural}`;
+                // "שני שועלים" או "שתי חלליות"
+                text = `${item.gender === 'm' ? 'שני' : 'שתי'} ${item.name}`;
             } else {
-                text = `${count} ${item.plural}`;
+                // "חמישה תותים" - מנוע הדיבור בדרך כלל יודע להסתדר עם מספרים מעל 2
+                text = `${count} ${item.name}`;
             }
+
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'he-IL';
             utterance.rate = 0.85;
@@ -274,6 +277,7 @@
             const maxRange = parseInt(document.getElementById('rangeSelect').value);
             const itemsCol = document.getElementById('items-column');
             const targetsCol = document.getElementById('targets-column');
+            
             itemsCol.innerHTML = '';
             targetsCol.innerHTML = '';
 
@@ -283,7 +287,12 @@
             const shuffledNums = shuffle(availableNumbers).slice(0, numRows);
 
             const gameState = selectedEmojis.map((item, index) => ({
-                id: index, ...item, count: shuffledNums[index]
+                id: index,
+                icon: item.icon,
+                name: item.name,
+                singular: item.singular,
+                gender: item.gender,
+                count: shuffledNums[index]
             }));
 
             // טור הציורים
@@ -292,7 +301,9 @@
                 group.className = 'image-group';
                 group.draggable = true;
                 group.id = `group-${item.id}`;
+                
                 let fontSize = item.count > 50 ? '16px' : item.count > 20 ? '22px' : '35px';
+
                 for(let i = 0; i < item.count; i++) {
                     const span = document.createElement('span');
                     span.className = 'emoji-unit';
@@ -300,6 +311,7 @@
                     span.textContent = item.icon;
                     group.appendChild(span);
                 }
+
                 group.ondragstart = (e) => e.dataTransfer.setData('text', item.id);
                 itemsCol.appendChild(group);
             });
@@ -309,15 +321,21 @@
                 const zone = document.createElement('div');
                 zone.className = 'drop-zone';
                 zone.dataset.id = item.id;
+                
+                // תצוגת טקסט חכמה מתחת למספר
+                const label = item.count === 1 ? item.singular : item.name;
+
                 zone.innerHTML = `
                     <button class="speak-btn">🔊</button>
                     <div class="number-text">${item.count}</div>
-                    <div style="font-size: 1.1rem; font-weight: 600; opacity: 0.7;">${item.count === 1 ? item.name : item.plural}</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; opacity: 0.7;">${label}</div>
                 `;
+
                 zone.querySelector('.speak-btn').onclick = (e) => {
                     e.stopPropagation();
-                    speakQuantity(item.count, item);
+                    speakCorrectHebrew(item.count, item);
                 };
+
                 zone.ondragover = (e) => e.preventDefault();
                 zone.ondragenter = () => zone.classList.add('hover');
                 zone.ondragleave = () => zone.classList.remove('hover');
@@ -342,7 +360,7 @@
         function handleError(zone) {
             document.getElementById('errorSound').play();
             zone.classList.add('error-shake');
-            setTimeout(() => zone.classList.remove('error-shake'), 400);
+            setTimeout(() => { zone.classList.remove('error-shake'); }, 400);
         }
 
         renderGame();
