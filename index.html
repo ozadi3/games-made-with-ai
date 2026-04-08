@@ -17,6 +17,7 @@
             --secondary: #a29bfe;
             --bg: #f8f9fa;
             --accent: #fd79a8;
+            --success: #00b894;
         }
 
         /* ביטול תפריט הקשר ובחירה */
@@ -107,6 +108,7 @@
             font-size: 5rem;
         }
 
+        .math-bg { background: linear-gradient(45deg, #55efc4, var(--success)); }
         .coloring-bg { background: linear-gradient(45deg, #ffeaa7, var(--accent)); }
         .memory-bg { background: linear-gradient(45deg, #fd79a8, var(--accent)); }
         .matching-bg { background: linear-gradient(45deg, #abcaca, var(--accent)); }
@@ -172,12 +174,24 @@
 </header>
 
 <div class="games-grid">
+    
+    <a href="math/math.html" class="game-card">
+        <div class="game-img math-bg">🔢</div>
+        <div class="game-info">
+            <div>
+                <h2>חשבון בכיף</h2>
+                <p>מתרגלים חיבור, חיסור ומספרים בדרך חווייתית ומהנה!</p>
+            </div>
+            <div class="btn-play">למד עכשיו</div>
+        </div>
+    </a>
+
     <a href="puzzle/index.html" class="game-card">
         <div class="game-img">🧩</div>
         <div class="game-info">
             <div>
                 <h2>פאזל קסום</h2>
-                <p>הופכים כל תמונה לפאזל מאתגר. אפשר להעלות תמונות מהגלריה או מהרשת!</p>
+                <p>הופכים כל תמונה לפאזל מאתגר!</p>
             </div>
             <div class="btn-play">שחק עכשיו</div>
         </div>
@@ -270,7 +284,7 @@
         installContainer.style.display = 'none';
     };
 
-    // רישום Service Worker (חובה בשביל אנדרואיד)
+    // רישום Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').then(reg => {
