@@ -4,53 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>משחק הכמויות המושלם ✨</title>
-    <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch@1.1.0/DragDropTouch.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
         :root {
             --primary: #6c5ce7;
             --success: #00b894;
             --error: #ff7675;
             --accent: #fd79a8;
+            --bg: #f8f9fc;
         }
 
-        /* מניעת גלילה וחסימת העתקה */
+        /* הגדרות בסיס ומניעת גלילה/סימון */
         html, body {
             height: 100%;
             margin: 0;
             overflow: hidden;
-            touch-action: manipulation;
+            touch-action: none;
+            background-color: var(--bg);
             -webkit-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #f8f9fc;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px 20px;
-            box-sizing: border-box;
-        }
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* הקטנת ה-padding בצדדים מ-20px ל-10px */
+    padding: 10px 10px; 
+    box-sizing: border-box;
+}
 
         h1 { 
             color: var(--primary); 
             margin: 10px 0; 
-            font-size: clamp(1.5rem, 4vh, 2.2rem); 
+            font-size: clamp(1.5rem, 4vh, 2.2rem);
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
         }
 
+        /* פאנל בקרה */
         .controls {
             background: white;
             padding: 8px 25px;
             border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
             display: flex;
             gap: 15px;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #eee;
         }
+
+        .controls span { font-weight: bold; color: #444; }
 
         select {
             padding: 6px 15px;
@@ -58,76 +66,110 @@
             border: 2px solid var(--primary);
             border-radius: 12px;
             cursor: pointer;
+            outline: none;
+            background: white;
         }
 
         .game-board {
-            display: flex;
-            gap: 8vw;
-            width: 100%;
-            max-width: 1100px;
-            justify-content: center;
-            align-items: stretch;
-            flex: 1;
-            min-height: 0;
-        }
+    display: flex;
+    /* צמצום המרווח בין הטורים מ-8vw ל-3vw כדי לתת למלבנים יותר רוחב */
+    gap: 3vw; 
+    width: 100%;
+    /* הגדלת הרוחב המקסימלי ל-95% מהמסך */
+    max-width: 95vw; 
+    justify-content: center;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 10px;
+}
 
+        /* מבטיח שהטורים ינצלו את כל הגובה ויחלקו אותו שווה */
         .column { 
             display: flex; 
             flex-direction: column; 
             gap: 15px; 
             flex: 1; 
-            min-height: 0;
+            height: 100%; 
+            min-height: 0; /* קריטי למניעת חריגת תוכן */
+        }
+
+        /* הכרטיסים עצמם - הופכים אותם לגמישים */
+        .image-group, .drop-zone {
+            flex: 1; 
+            min-height: 0; /* מאפשר לכרטיס להתכווץ במידת הצורך */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            background: white;
+            border: 3px solid #e1e1e1;
+            border-radius: 20px;
+            box-shadow: 0 6px 0px rgba(0,0,0,0.05);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
         }
 
         .image-group {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(min(35px, 5vw), 1fr));
-            gap: 5px;
-            padding: 10px;
-            cursor: grab;
-            transition: transform 0.2s;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
-            align-content: center;
-            justify-items: center;
-            min-height: 0;
-            touch-action: none; /* קריטי לגרירה באייפד */
-        }
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative; /* חשוב לחישוב המיקום */
+    z-index: 1;
+    transition: transform 0.1s ease-out, opacity 0.2s; /* אנימציה עדינה */
+}
 
-        .image-group:active { cursor: grabbing; }
+/* כשהמלבן נגרר - נוסיף לו קלאס דרך ה-JS */
+.dragging {
+    opacity: 0.8;
+    z-index: 1000 !important;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+}
 
-        .image-group:hover {
-            transform: scale(1.05);
-            background: rgba(255, 255, 255, 0.8);
-        }
+        /* אנחנו מגדירים למלבן שהוא "מיכל" (Container) כדי שנוכל למדוד אותו */
+.drop-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    container-type: size; /* מאפשר ליחידות cqh לעבוד */
+    border-style: dashed;
+    border-color: #ccd1d9;
+    padding: 2px;
+}
 
-        .emoji-unit {
-            line-height: 1;
-            display: inline-block;
-            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1));
-            pointer-events: none;
-        }
+.number-text { 
+    /* הפונט יהיה 50% מהגובה של המלבן שלו - תמיד יתאים! */
+    font-size: 50cqh; 
+    font-weight: 900;
+    line-height: 1;
+    margin: 0;
+}
 
-        .drop-zone {
-            flex: 1;
-            background: white;
-            border: 3px solid #eee;
-            border-radius: 25px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            transition: all 0.3s;
-            min-height: 0;
-        }
+.label-text {
+    /* גם הטקסט של השם יתאים את עצמו (15% מגובה המלבן) */
+    font-size: 15cqh;
+    font-weight: 600;
+    opacity: 0.8;
+}
 
         .drop-zone.hover { 
             border-color: var(--primary);
             background: #f3f0ff;
-            transform: scale(1.03);
+            border-style: solid;
+            transform: scale(1.04);
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.15);
+        }
+
+        .drop-zone.matched {
+            background: var(--success);
+            border: 3px solid #55efc4;
+            color: white;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         .drop-zone.error-shake {
@@ -143,57 +185,56 @@
             75% { transform: translateX(-10px); }
         }
 
-        .drop-zone.matched {
-            background: var(--success);
-            border-color: #55efc4;
-            color: white;
-        }
-
-        .number-text { 
-            font-size: clamp(2rem, 7vh, 3.5rem); 
-            font-weight: 800; 
-            line-height: 1;
-        }
         
+        
+        /* כפתור רמקול */
         .speak-btn {
             position: absolute;
-            top: 8px;
-            left: 8px;
+            top: 5px;
+            left: 5px;
             background: var(--accent);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             cursor: pointer;
-            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 3px 0 #d63031;
+            font-size: 14px;
+            transition: transform 0.1s;
         }
 
-        .hidden { visibility: hidden; pointer-events: none; }
+        .speak-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #d63031; }
 
+        .hidden { visibility: hidden; opacity: 0; pointer-events: none; transform: scale(0.5); transition: 0.4s; }
+
+        /* כפתור רענון */
         .btn-refresh {
             margin: 15px 0;
-            padding: 12px 40px;
-            font-size: 18px;
+            padding: 14px 50px;
+            font-size: 20px;
             background: var(--primary);
             color: white;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 5px 0 #5849c4;
+            box-shadow: 0 6px 0 #5849c4;
+            transition: all 0.1s;
         }
 
+        .btn-refresh:active { transform: translateY(3px); box-shadow: 0 3px 0 #5849c4; }
+
+        /* כפתור בית */
         .home-button {
             position: fixed;
             top: 20px;
             left: 20px;
             z-index: 1001;
-            background: rgba(255, 255, 255, 0.9);
+            background: white;
             color: var(--primary);
             text-decoration: none;
             width: 60px;
@@ -204,19 +245,92 @@
             justify-content: center;
             font-size: 30px;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
             border: 2px solid var(--primary);
-            cursor: pointer;
+            transition: 0.3s;
         }
 
+        .home-button:hover { transform: scale(1.1); }
+
+        /* התאמה למסכים קטנים */
         @media (max-width: 600px) {
             .home-button { width: 50px; height: 50px; font-size: 24px; top: 15px; left: 15px; }
+            .game-board { gap: 4vw; padding: 0 5px; }
+            .image-group, .drop-zone { border-width: 2px; border-radius: 15px; }
+            .controls { padding: 5px 15px; gap: 8px; flex-wrap: wrap; justify-content: center; }
+            .controls select { padding: 4px 8px; font-size: 14px; }
         }
+
+       /* מסך רקע כהה ויוקרתי */
+        #victory-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(108, 92, 231, 1) 0%, rgba(45, 12, 87, 1) 100%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000; overflow: hidden; perspective: 1000px; /* מאפשר אפקטים תלת-ממדיים */
+        }
+
+        /* שכבת האימוג'ים הנופלים - מאחורי הכרטיס */
+        .floating-emojis {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; pointer-events: none;
+        }
+
+        /* כרטיס הניצחון הקופץ */
+        .victory-card {
+            background: white; padding: 50px; border-radius: 40px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border: 5px solid var(--accent);
+            z-index: 10; /* מעל האימוג'ים */
+            transform: scale(0) rotateX(-90deg); /* מתחיל מקופל בתלת-ממד */
+            animation: popInSuccess 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popInSuccess {
+            to { transform: scale(1) rotateX(0deg); }
+        }
+
+        .trophy {
+            font-size: 100px; margin-bottom: 10px;
+            animation: trophyBounce 1s infinite alternate ease-in-out;
+        }
+
+        @keyframes trophyBounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-15px); }
+        }
+
+        #victory-screen h2 { color: var(--primary); font-size: 48px; margin: 10px 0; }
+        #victory-screen p { color: #555; font-size: 22px; margin-bottom: 30px; }
+
+        /* אנימציית נפילה לאימוג'ים */
+        .falling-emoji {
+            position: absolute; font-size: 40px;
+            animation: fall linear infinite;
+            opacity: 0.8;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(100vh) rotate(360deg); }
+        }
+
+        .play-again-btn {
+            margin-top: 30px; padding: 15px 50px; font-size: 24px;
+            background: var(--success); color: white; border: none;
+            border-radius: 50px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 8px 0 #009476; transition: 0.1s;
+        }
+
+        .play-again-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #009476; }
+
+        @media (min-width: 1200px) {
+    .game-board {
+        max-width: 1400px; /* מאפשר ללוח להיות רחב מאוד במסכים גדולים */
+    }
+}
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-    <a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
+    <a href="../index.html" class="home-button">🏠</a>
 
     <h1>משחק הכמויות שלי ✨</h1>
 
@@ -228,19 +342,41 @@
             <option value="50">קשה (1-50)</option>
             <option value="100">מאתגר (1-100)</option>
         </select>
+    
+        <span>כמות שורות:</span>
+        <select id="rowsSelect" onchange="renderGame()">
+            <option value="3">3 שורות</option>
+            <option value="5" selected>5 שורות</option>
+            <option value="8">8 שורות</option>
+            <option value="10">10 שורות</option>
+        </select>
     </div>
     
-    <div class="game-board">
+    <div class="game-board" id="board">
         <div class="column" id="items-column"></div>
         <div class="column" id="targets-column"></div>
     </div>
 
+    <div id="victory-screen">
+        <div class="floating-emojis" id="victory-emojis"></div>
+        
+        <div class="victory-card">
+            <div class="trophy">🏆</div>
+            <h2>כל הכבוד!</h2>
+            <p>מצאת את כל הכמויות הנכונות!</p>
+            <button class="play-again-btn" onclick="closeVictory()">לשחק שוב? 🔄</button>
+        </div>
+    </div>
+
     <button class="btn-refresh" onclick="renderGame()">משחק חדש 🔄</button>
 
-    <audio id="successSound"><source src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3" type="audio/mpeg"></audio>
-    <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="successSound"><source src="https://assets.mixkit.co/active_storage/sfx/866/866-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/3090/3090-preview.mp3" type="audio/mpeg"></audio>
 
     <script>
+let totalRows = 5; // מספר הזוגות שצריך להתאים
+let matchesCount = 0; // מונה ההצלחות הנוכחי
+
         const emojiPool = [
             { icon: "🍓", name: "תותים", singular: "תות", gender: "m" },
             { icon: "🦊", name: "שועלים", singular: "שועל", gender: "m" },
@@ -256,114 +392,278 @@
 
         function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
+        function getHebrewNumber(n, gender) {
+            const units = gender === 'm' 
+                ? ["", "אחד", "שני", "שלושה", "ארבעה", "חמישה", "שישה", "שבעה", "שמונה", "תשעה"]
+                : ["", "אחת", "שתי", "שלוש", "ארבע", "חמש", "שש", "שבע", "שמונה", "תשע"];
+            
+            const teens = gender === 'm'
+                ? ["עשרה", "אחד עשר", "שנים עשר", "שלושה עשר", "ארבעה עשר", "חמישה עשר", "שישה עשר", "שבעה עשר", "שמונה עשר", "תשעה עשר"]
+                : ["עשר", "אחת עשרה", "שתים עשרה", "שלוש עשרה", "ארבע עשרה", "חמש עשרה", "שש עשרה", "שבע עשרה", "שמונה עשרה", "תשע עשרה"];
+            
+            const tens = ["", "עשר", "עשרים", "שלושים", "ארבעים", "חמישים", "שישים", "שבעים", "שמונים", "תשעים"];
+
+            if (n === 0) return "אפס";
+            if (n < 10) return units[n];
+            if (n < 20) return teens[n - 10];
+            if (n === 100) return "מאה";
+            
+            const unitPart = n % 10;
+            const tensPart = Math.floor(n / 10);
+            
+            if (unitPart === 0) return tens[tensPart];
+            
+            // עברית תקנית: עשרים ואחד, עשרים ואחת
+            return tens[tensPart] + " ו" + units[unitPart];
+        }
+
         function speakCorrectHebrew(count, item) {
             window.speechSynthesis.cancel();
             
-            const maleNumbers = { 1: "אחד", 2: "שני", 3: "שלושה", 4: "ארבעה", 5: "חמישה", 6: "שישה", 7: "שבעה", 8: "שמונה", 9: "תשעה", 10: "עשרה" };
-            const femaleNumbers = { 1: "אחת", 2: "שתי", 3: "שלוש", 4: "ארבע", 5: "חמש", 6: "שש", 7: "שבע", 8: "שמונה", 9: "תשע", 10: "עשר" };
+            const numberWord = getHebrewNumber(count, item.gender);
+            let text = "";
 
-            let countText = (count <= 10) ? (item.gender === 'm' ? maleNumbers[count] : femaleNumbers[count]) : count;
-            let text = count === 1 ? `${item.singular} ${countText}` : `${countText} ${item.name}`;
+            if (count === 1) {
+                text = `${item.singular} ${numberWord}`;
+            } else if (count === 2 && count <= 10) {
+                // טיפול ב"שני שועלים" או "שתי חלליות"
+                text = `${numberWord} ${item.name}`;
+            } else {
+                text = `${numberWord} ${item.name}`;
+            }
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'he-IL';
-            utterance.rate = 0.85;
-
+            utterance.rate = 0.9;
+            
             const voices = window.speechSynthesis.getVoices();
-            const hebrewVoice = voices.find(v => v.lang.includes('he') || v.lang.includes('he-IL'));
+            const hebrewVoice = voices.find(v => v.lang.includes('he'));
             if (hebrewVoice) utterance.voice = hebrewVoice;
 
             window.speechSynthesis.speak(utterance);
         }
 
+        function drawEmojisOnCanvas(canvas, emoji, count) {
+    const ctx = canvas.getContext('2d');
+    const parent = canvas.parentElement;
+    
+    // מדידה מדויקת של השטח הפנוי
+    const width = parent.clientWidth - 10;
+    const height = parent.clientHeight - 10;
+    
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    ctx.scale(dpr, dpr);
+    
+    ctx.clearRect(0, 0, width, height);
+    if (count === 0) return;
+
+    // חישוב שטח ותפיסת מקום
+    const area = width * height;
+    const areaPerEmoji = area / count;
+    let fontSize = Math.sqrt(areaPerEmoji) * 0.85; // מקדם ביטחון של 85% מהשטח
+
+    // הגבלות גודל חכמות
+    fontSize = Math.min(width / 2.5, fontSize); // שלא יהיה רחב מדי במלבן צר
+    fontSize = Math.max(10, Math.min(50, fontSize));
+
+    ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const cols = Math.max(1, Math.floor(width / fontSize));
+    const rows = Math.ceil(count / cols);
+    
+    // חישוב מרווחים כדי למרכז אנכית ואופקית
+    const actualGridWidth = Math.min(count, cols) * fontSize;
+    const actualGridHeight = rows * fontSize;
+    
+    const startX = (width - actualGridWidth) / 2 + fontSize / 2;
+    const startY = (height - actualGridHeight) / 2 + fontSize / 2;
+
+    for (let i = 0; i < count; i++) {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        
+        const x = startX + col * (actualGridWidth / Math.min(count, cols));
+        const y = startY + row * fontSize;
+        
+        // ציור רק אם אנחנו בתוך גבולות הגובה (ליתר ביטחון)
+        if (y < height - 2) {
+            ctx.fillText(emoji, x, y);
+        }
+    }
+}
         function renderGame() {
+            // 1. קריאת הערכים מהמשתמש
+            totalRows = parseInt(document.getElementById('rowsSelect').value);
             const maxRange = parseInt(document.getElementById('rangeSelect').value);
+            
+            matchesCount = 0;
+            const victoryEmojis = document.getElementById('victory-emojis');
+            if (victoryEmojis) victoryEmojis.innerHTML = ''; 
+            
             const itemsCol = document.getElementById('items-column');
             const targetsCol = document.getElementById('targets-column');
+            
             itemsCol.innerHTML = '';
             targetsCol.innerHTML = '';
 
-            const numRows = 5;
-            const selectedEmojis = shuffle([...emojiPool]).slice(0, numRows);
+            // התאמת מרווחים לפי כמות השורות כדי שייכנסו
+            const gapValue = totalRows > 5 ? '8px' : '15px';
+            itemsCol.style.gap = gapValue;
+            targetsCol.style.gap = gapValue;
+
+            // שימוש ב-totalRows הנבחר
+            const selectedEmojis = shuffle([...emojiPool]).slice(0, totalRows);
             const availableNumbers = Array.from({length: maxRange}, (_, i) => i + 1);
-            const shuffledNums = shuffle(availableNumbers).slice(0, numRows);
+            const shuffledNums = shuffle(availableNumbers).slice(0, totalRows);
 
             const gameState = selectedEmojis.map((item, index) => ({
                 id: index,
-                icon: item.icon,
-                name: item.name,
-                singular: item.singular,
-                gender: item.gender,
+                ...item,
                 count: shuffledNums[index]
             }));
 
-            // טור הציורים
+            // --- יצירת טור התמונות (החלקים לגרירה) ---
+            const itemsFragment = document.createDocumentFragment();
+            
             shuffle([...gameState]).forEach(item => {
-                const group = document.createElement('div');
-                group.className = 'image-group';
-                group.draggable = true;
-                group.id = `group-${item.id}`;
-                
-                let fontSize = item.count > 50 ? '16px' : item.count > 20 ? '22px' : '35px';
-                for(let i = 0; i < item.count; i++) {
-                    const span = document.createElement('span');
-                    span.className = 'emoji-unit';
-                    span.style.fontSize = fontSize;
-                    span.textContent = item.icon;
-                    group.appendChild(span);
-                }
+    const group = document.createElement('div');
+    group.className = 'image-group';
+    group.id = `group-${item.id}`;
+    
+    const canvas = document.createElement('canvas');
+    group.appendChild(canvas);
+    
+    const ro = new ResizeObserver(() => {
+        drawEmojisOnCanvas(canvas, item.icon, item.count);
+    });
+    ro.observe(group);
 
-                group.ondragstart = (e) => e.dataTransfer.setData('text', item.id);
-                itemsCol.appendChild(group);
-            });
+    // לוגיקת גרירה חלקה לילדים
+    let startX, startY;
+    
+    const moveHandler = (e) => {
+        const point = e.touches ? e.touches[0] : e;
+        const deltaX = point.clientX - startX;
+        const deltaY = point.clientY - startY;
+        group.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.1)`;
+    };
 
-            // טור המספרים
+    const endHandler = (e) => {
+        const point = e.changedTouches ? e.changedTouches[0] : e;
+        group.classList.remove('dragging');
+        
+        // הסתרה רגעית כדי למצוא מה יש מתחת לאצבע
+        group.style.display = 'none';
+        const elementBelow = document.elementFromPoint(point.clientX, point.clientY);
+        group.style.display = 'flex';
+
+        const zone = elementBelow ? elementBelow.closest('.drop-zone') : null;
+
+        if (zone && zone.dataset.id == item.id && !zone.classList.contains('matched')) {
+            handleWin(item.id, zone, item);
+        } else {
+            // חזרה למקום אם פספסנו
+            group.style.transform = "translate(0, 0) scale(1)";
+            if (zone) handleError(zone);
+        }
+
+        // ניקוי אירועים
+        window.removeEventListener('mousemove', moveHandler);
+        window.removeEventListener('mouseup', endHandler);
+        window.removeEventListener('touchmove', moveHandler);
+        window.removeEventListener('touchend', endHandler);
+    };
+
+    const startHandler = (e) => {
+        if (e.type === 'touchstart') e.preventDefault(); // מניעת גלילה
+        const point = e.touches ? e.touches[0] : e;
+        startX = point.clientX;
+        startY = point.clientY;
+        
+        group.classList.add('dragging');
+        
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', endHandler);
+        window.addEventListener('touchmove', moveHandler, { passive: false });
+        window.addEventListener('touchend', endHandler);
+    };
+
+    group.addEventListener('mousedown', startHandler);
+    group.addEventListener('touchstart', startHandler, { passive: false });
+
+    itemsFragment.appendChild(group);
+});
+            itemsCol.appendChild(itemsFragment);
+
+            //טור המספרים נשאר אותו דבר...
+            const targetsFragment = document.createDocumentFragment();
             shuffle([...gameState]).forEach(item => {
                 const zone = document.createElement('div');
                 zone.className = 'drop-zone';
                 zone.dataset.id = item.id;
-                
                 const label = item.count === 1 ? item.singular : item.name;
-
-                zone.innerHTML = `
-                    <button class="speak-btn">🔊</button>
-                    <div class="number-text">${item.count}</div>
-                    <div style="font-size: 1.1rem; font-weight: 600; opacity: 0.7;">${label}</div>
-                `;
-
-                zone.querySelector('.speak-btn').onclick = (e) => {
-                    e.stopPropagation();
-                    speakCorrectHebrew(item.count, item);
-                };
-
-                zone.ondragover = (e) => e.preventDefault();
-                zone.ondragenter = () => zone.classList.add('hover');
-                zone.ondragleave = () => zone.classList.remove('hover');
-                zone.ondrop = (e) => {
-                    zone.classList.remove('hover');
-                    const draggedId = e.dataTransfer.getData('text');
-                    if(draggedId == zone.dataset.id) handleWin(draggedId, zone);
-                    else handleError(zone);
-                };
-                targetsCol.appendChild(zone);
+                zone.innerHTML = `<button class="speak-btn">🔊</button><div class="number-text">${item.count}</div><div class="label-text">${label}</div>`;
+                zone.querySelector('.speak-btn').addEventListener('click', (e) => { e.stopPropagation(); speakCorrectHebrew(item.count, item); });
+                zone.addEventListener('dragover', (e) => e.preventDefault());
+                zone.addEventListener('dragenter', (e) => { e.preventDefault(); if (!zone.classList.contains('matched')) zone.classList.add('hover'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('hover'));
+                zone.addEventListener('drop', (e) => { zone.classList.remove('hover'); const draggedId = e.dataTransfer.getData('text/plain'); if(draggedId == zone.dataset.id) handleWin(draggedId, zone, item); else handleError(zone); });
+                targetsFragment.appendChild(zone);
             });
+            targetsCol.appendChild(targetsFragment);
         }
 
-        function handleWin(id, zone) {
+        // שאר הפונקציות handleWin, handleError, showVictoryScreen ו-closeVictory נשארות ללא שינוי...
+        function handleWin(id, zone, item) {
+            matchesCount++;
             document.getElementById('successSound').play();
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.8 } });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#6c5ce7', '#00b894', '#fd79a8'] });
             zone.classList.add('matched');
-            zone.innerHTML = "<span style='font-size:clamp(3rem, 10vh, 5rem)'>🌟</span>";
+            zone.innerHTML = `<div style="font-size: 4rem;">${item.icon}</div><div style="font-size: 1.5rem; font-weight: bold;">${item.count}</div>`;
             document.getElementById(`group-${id}`).classList.add('hidden');
+            if (matchesCount === totalRows) setTimeout(showVictoryScreen, 1000);
+        }
+
+        function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+        function showVictoryScreen() {
+            const emojiContainer = document.getElementById('victory-emojis');
+            emojiContainer.innerHTML = '';
+            document.getElementById('victory-screen').style.display = 'flex';
+            const emojis = emojiPool.map(e => e.icon);
+            const emojiCount = 50;
+            for (let i = 0; i < emojiCount; i++) {
+                const emojiEl = document.createElement('div'); emojiEl.className = 'falling-emoji';
+                emojiEl.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emojiEl.style.left = Math.random() * 100 + 'vw';
+                const size = Math.random() * (50 - 20) + 20; emojiEl.style.fontSize = size + 'px';
+                const duration = Math.random() * (6 - 3) + 3; emojiEl.style.animationDuration = duration + 's';
+                emojiEl.style.animationDelay = Math.random() * 2 + 's';
+                if (size < 30) { emojiEl.style.filter = 'blur(1px)'; emojiEl.style.opacity = '0.5'; }
+                emojiContainer.appendChild(emojiEl);
+            }
+            setTimeout(() => { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FFEAA7', '#FD79A8', '#55EFC4', '#6C5CE7'] }); }, 500);
         }
 
         function handleError(zone) {
             document.getElementById('errorSound').play();
             zone.classList.add('error-shake');
-            setTimeout(() => { zone.classList.remove('error-shake'); }, 400);
+            setTimeout(() => zone.classList.remove('error-shake'), 400);
         }
 
-        // טעינת קולות ל-Safari/iPad
+        function closeVictory() {
+            document.getElementById('victory-screen').style.display = 'none';
+            const emojiContainer = document.getElementById('victory-emojis');
+            while (emojiContainer.firstChild) emojiContainer.removeChild(emojiContainer.firstChild);
+            renderGame();
+        }
+
         window.speechSynthesis.getVoices();
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
