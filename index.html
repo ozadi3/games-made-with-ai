@@ -2,14 +2,14 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="manifest.json?v=1.0.5">
+    <link rel="manifest" href="manifest.json?v=1.0.6">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kids Games">
 
     <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Kids Games ✨</title>
     <style>
         :root {
@@ -20,12 +20,19 @@
             --success: #00b894;
         }
 
-        /* ביטול תפריט הקשר ובחירה */
+        /* ביטול תפריט הקשר, בחירה ומניעת מחוות מערכת */
         * {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            /* מונע משיכה לרענון (Pull-to-refresh) */
+            overscroll-behavior-y: contain;
+            overflow-x: hidden;
+            height: 100%;
         }
 
         body {
@@ -40,6 +47,24 @@
             padding-bottom: 40px;
             padding-top: env(safe-area-inset-top);
         }
+
+        /* מסך פתיחה להפעלת Fullscreen */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--primary);
+            z-index: 20000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .play-icon { font-size: 6rem; margin-bottom: 20px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
         header {
             padding: 40px 20px;
@@ -93,9 +118,9 @@
             border: 1px solid rgba(255,255,255,0.3);
         }
 
-        .game-card:active, .game-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        .game-card:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .game-img {
@@ -132,7 +157,6 @@
             font-size: 1.1rem;
         }
 
-        /* עיצוב באנר ההתקנה */
         #pwa-install-container {
             display: none;
             position: fixed;
@@ -166,7 +190,13 @@
 </head>
 <body>
 
-<div class="version-tag">v1.0.5</div>
+<div id="start-overlay" onclick="enterFullscreen()">
+    <div class="play-icon">🚀</div>
+    <h1>היי! מוכנים לשחק?</h1>
+    <p>לחצו כאן כדי להיכנס למסך מלא</p>
+</div>
+
+<div class="version-tag">v1.0.6</div>
 
 <header>
     <h1>המשחקים שלי ✨</h1>
@@ -251,20 +281,39 @@
 </div>
 
 <script>
-    // לוגיקת PWA לאנדרואיד
+    // פונקציית מסך מלא - חייבת לקרות בעקבות לחיצת משתמש
+    function enterFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) { /* Safari/iOS */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+            elem.msRequestFullscreen();
+        }
+        
+        // הסתרת מסך הפתיחה
+        document.getElementById('start-overlay').style.display = 'none';
+    }
+
+    // מניעת יציאה בטעות
+    window.onbeforeunload = function() {
+        return "האם אתם בטוחים שברצונכם לצאת?";
+    };
+
+    // לוגיקת PWA
     let deferredPrompt;
     const installContainer = document.getElementById('pwa-install-container');
     const installBtn = document.getElementById('btn-install-android');
     const closeBtn = document.getElementById('btn-close-pwa');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        // מונע מהדפדפן להקפיץ את הבאנר האוטומטי
         e.preventDefault();
         deferredPrompt = e;
         
-        // מציג את הבאנר שלנו אחרי 3 שניות של גלישה
         setTimeout(() => {
-            if (!window.matchMedia('(display-mode: standalone)').matches) {
+            if (!window.matchMedia('(display-mode: standalone)').matches && 
+                !window.matchMedia('(display-mode: fullscreen)').matches) {
                 installContainer.style.display = 'flex';
             }
         }, 3000);
@@ -273,8 +322,6 @@
     installBtn.addEventListener('click', async () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response: ${outcome}`);
             deferredPrompt = null;
             installContainer.style.display = 'none';
         }
@@ -287,15 +334,11 @@
     // רישום Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').then(reg => {
-                console.log('Service Worker registered!');
-            }).catch(err => {
-                console.log('Registration failed:', err);
-            });
+            navigator.serviceWorker.register('/sw.js');
         });
     }
 
-    // מניעת מחוות זום בלחיצה כפולה (למובייל)
+    // מניעת זום ולחיצות כפולות
     document.addEventListener('touchstart', function (event) {
         if (event.touches.length > 1) {
             event.preventDefault();
