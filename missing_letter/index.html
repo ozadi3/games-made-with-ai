@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>משחק האות החסרה ✨</title>
+    
+    <!-- ספריית קונפטי לחגיגת ניצחון -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --success: #00b894;
+            --error: #ff7675;
+            --accent: #fd79a8;
+            --bg: #f8f9fc;
+        }
+
+        /* הגדרות בסיס ומניעת גלילה/סימון */
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+            background-color: var(--bg);
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 10px; 
+            box-sizing: border-box;
+        }
+
+        h1 { 
+            color: var(--primary); 
+            margin: 10px 0; 
+            font-size: clamp(1.5rem, 4vh, 2.2rem);
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+        }
+
+        /* פאנל בקרה */
+        .controls {
+            background: white;
+            padding: 8px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            border: 2px solid #eee;
+        }
+
+        .controls span { font-weight: bold; color: #444; }
+
+        select {
+            padding: 6px 15px;
+            font-size: 16px;
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            cursor: pointer;
+            outline: none;
+            background: white;
+        }
+
+        /* לוח המשחק */
+        .game-board {
+            display: flex;
+            gap: 3vw; 
+            width: 100%;
+            max-width: 95vw; 
+            justify-content: center;
+            align-items: stretch;
+            flex: 1;
+            min-height: 0;
+            padding-bottom: 10px;
+        }
+
+        .column { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            flex: 1; 
+            height: 100%; 
+            min-height: 0; 
+        }
+
+        /* כרטיסי האותיות הגרירות */
+        .letter-item, .word-zone {
+            flex: 1; 
+            min-height: 0; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            background: white;
+            border: 3px solid #e1e1e1;
+            border-radius: 20px;
+            box-shadow: 0 6px 0px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .letter-item {
+            touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+            z-index: 1;
+            font-size: clamp(2rem, 6vh, 3.5rem); /* פונט דינמי גדול וברור לאותיות */
+            font-weight: 800;
+            color: var(--primary);
+            cursor: grab;
+            background: #fff;
+            transition: transform 0.1s ease-out, opacity 0.2s;
+        }
+
+        .dragging {
+            opacity: 0.8;
+            z-index: 1000 !important;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+        }
+
+        /* אזורי היעד (התמונה והמילה) */
+        .word-zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-style: dashed;
+            border-color: #ccd1d9;
+            padding: 10px;
+            justify-content: space-evenly;
+        }
+
+        /* קנבס התמונה */
+        .image-container {
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* תצוגת המילה עם האות החסרה */
+        .word-display {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #2d3436;
+            margin-top: 5px;
+            display: flex;
+            gap: 2px;
+            direction: rtl;
+        }
+
+        /* קו תחתון לאות החסרה */
+        .missing-letter-slot {
+            color: var(--accent);
+            border-bottom: 3px solid var(--accent);
+            min-width: 20px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .word-zone.hover { 
+            border-color: var(--primary);
+            background: #f3f0ff;
+            border-style: solid;
+            transform: scale(1.04);
+            box-shadow: 0 10px 20px rgba(108, 92, 231, 0.15);
+        }
+
+        .word-zone.matched {
+            background: var(--success);
+            border: 3px solid #55efc4;
+            color: white;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .word-zone.matched .word-display {
+            color: white;
+        }
+        .word-zone.matched .missing-letter-slot {
+            color: #fff;
+            border-bottom: none;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .word-zone.error-shake {
+            border-color: var(--error);
+            background: #fff5f5;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+        
+        /* כפתורי רמקול (משותף לשני הטורים) */
+        .speak-btn {
+            position: absolute;
+            top: 5px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 0 #d63031;
+            font-size: 14px;
+            z-index: 10;
+        }
+        
+        /* מיקום הרמקול בתיבת המילה (שמאל למעלה) */
+        .word-zone .speak-btn { left: 5px; }
+        
+        /* מיקום הרמקול בתיבת האות (שמאל למעלה) */
+        .letter-item .speak-btn { left: 5px; }
+
+        .speak-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #d63031; }
+
+        .hidden { visibility: hidden; opacity: 0; pointer-events: none; transform: scale(0.5); transition: 0.4s; }
+
+        /* כפתור רענון */
+        .btn-refresh {
+            margin: 15px 0;
+            padding: 14px 50px;
+            font-size: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 6px 0 #5849c4;
+            transition: all 0.1s;
+        }
+
+        .btn-refresh:active { transform: translateY(3px); box-shadow: 0 3px 0 #5849c4; }
+
+        /* כפתור בית */
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: white;
+            color: var(--primary);
+            text-decoration: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--primary);
+            transition: 0.3s;
+        }
+
+        /* מסך ניצחון */
+        #victory-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(108, 92, 231, 1) 0%, rgba(45, 12, 87, 1) 100%);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000; overflow: hidden; perspective: 1000px;
+        }
+
+        .floating-emojis { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        .victory-card {
+            background: white; padding: 50px; border-radius: 40px;
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border: 5px solid var(--accent); z-index: 10;
+            transform: scale(0) rotateX(-90deg);
+            animation: popInSuccess 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popInSuccess { to { transform: scale(1) rotateX(0deg); } }
+
+        .trophy { font-size: 100px; margin-bottom: 10px; animation: trophyBounce 1s infinite alternate ease-in-out; }
+        @keyframes trophyBounce { from { transform: translateY(0); } to { transform: translateY(-15px); } }
+
+        #victory-screen h2 { color: var(--primary); font-size: 48px; margin: 10px 0; }
+        #victory-screen p { color: #555; font-size: 22px; margin-bottom: 30px; }
+
+        .falling-emoji { position: absolute; font-size: 40px; animation: fall linear infinite; opacity: 0.8; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+
+        .play-again-btn {
+            margin-top: 30px; padding: 15px 50px; font-size: 24px;
+            background: var(--success); color: white; border: none;
+            border-radius: 50px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 8px 0 #009476; transition: 0.1s;
+        }
+        .play-again-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #009476; }
+
+        /* התאמות למובייל */
+        @media (max-width: 600px) {
+            .home-button { width: 50px; height: 50px; font-size: 24px; top: 15px; left: 15px; }
+            .game-board { gap: 4vw; padding: 0 5px; }
+            .letter-item, .word-zone { border-width: 2px; border-radius: 15px; }
+            .controls { padding: 5px 15px; gap: 8px; flex-wrap: wrap; justify-content: center; }
+            .controls select { padding: 4px 8px; font-size: 14px; }
+            .word-display { font-size: 18px; }
+        }
+
+        @media (min-width: 1200px) { .game-board { max-width: 1400px; } }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+    <a href="../index.html" class="home-button">🏠</a>
+
+    <h1>משחק האות החסרה ✨</h1>
+
+    <div class="controls">
+        <span>מיקום האות החסרה:</span>
+        <select id="difficultySelect" onchange="renderGame()">
+            <option value="first">אות ראשונה (קל)</option>
+            <option value="last">אות אחרונה (בינוני)</option>
+            <option value="random" selected>אות אקראית במילה</option>
+        </select>
+    
+        <span>כמות מילים:</span>
+        <select id="rowsSelect" onchange="renderGame()">
+            <option value="3">3 מילים</option>
+            <option value="4" selected>4 מילים</option>
+            <option value="5">5 מילים</option>
+        </select>
+    </div>
+    
+    <div class="game-board" id="board">
+        <div class="column" id="letters-column"></div>
+        <div class="column" id="words-column"></div>
+    </div>
+
+    <div id="victory-screen">
+        <div class="floating-emojis" id="victory-emojis"></div>
+        <div class="victory-card">
+            <div class="trophy">🏆</div>
+            <h2>כל הכבוד!</h2>
+            <p>השלמת את כל האותיות החסרות במקומן!</p>
+            <button class="play-again-btn" onclick="closeVictory()">לשחק שוב? 🔄</button>
+        </div>
+    </div>
+
+    <button class="btn-refresh" onclick="renderGame()">משחק חדש 🔄</button>
+
+    <audio id="successSound"><source src="https://assets.mixkit.co/active_storage/sfx/866/866-preview.mp3" type="audio/mpeg"></audio>
+    <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/3090/3090-preview.mp3" type="audio/mpeg"></audio>
+
+    <script>
+        let totalRows = 4; 
+        let matchesCount = 0; 
+
+        const wordPool = [
+            { icon: "🍎", word: "תפוח" },
+            { icon: "🎈", word: "בלון" },
+            { icon: "🐱", word: "חתול" },
+            { icon: "🏡", word: "בית" },
+            { icon: "🚗", word: "מכונית" },
+            { icon: "🍌", word: "בננה" },
+            { icon: "☀️", word: "שמש" },
+            { icon: "🧅", word: "בצל" },
+            { icon: "🐟", word: "דג" },
+            { icon: "🌳", word: "עץ" },
+            { icon: "👑", word: "כתר" },
+            { icon: "🍦", word: "גלידה" },
+            { icon: "🕊️", word: "יונה" },
+            { icon: "👟", word: "נעל" },
+            { icon: "🔔", word: "פעמון" }
+        ];
+
+        function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+        // פונקציית הקראה משותפת (מתאימה גם למילים וגם לאותיות בודדות)
+        function speakText(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'he-IL';
+            utterance.rate = 0.8; // מעט לאט יותר כדי שהאותיות יישמעו ברור
+            
+            const voices = window.speechSynthesis.getVoices();
+            const hebrewVoice = voices.find(v => v.lang.includes('he'));
+            if (hebrewVoice) utterance.voice = hebrewVoice;
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function drawEmojiOnCanvas(canvas, emoji) {
+            const ctx = canvas.getContext('2d');
+            const parent = canvas.parentElement;
+            
+            const width = parent.clientWidth;
+            const height = parent.clientHeight;
+            
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(dpr, dpr);
+            
+            ctx.clearRect(0, 0, width, height);
+
+            const fontSize = Math.min(width, height) * 0.65;
+            ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, width / 2, height / 2);
+        }
+
+        function renderGame() {
+            totalRows = parseInt(document.getElementById('rowsSelect').value);
+            const difficulty = document.getElementById('difficultySelect').value;
+            
+            matchesCount = 0;
+            const victoryEmojis = document.getElementById('victory-emojis');
+            if (victoryEmojis) victoryEmojis.innerHTML = ''; 
+            
+            const lettersCol = document.getElementById('letters-column');
+            const wordsCol = document.getElementById('words-column');
+            
+            lettersCol.innerHTML = '';
+            wordsCol.innerHTML = '';
+
+            const selectedItems = shuffle([...wordPool]).slice(0, totalRows);
+
+            const gameState = selectedItems.map((item, index) => {
+                let missingIndex = 0;
+                if (difficulty === 'last') {
+                    missingIndex = item.word.length - 1;
+                } else if (difficulty === 'random') {
+                    missingIndex = Math.floor(Math.random() * item.word.length);
+                }
+                
+                return {
+                    id: index,
+                    icon: item.icon,
+                    fullWord: item.word,
+                    missingLetter: item.word[missingIndex],
+                    missingIndex: missingIndex
+                };
+            });
+
+            // --- 1. יצירת טור האותיות (עם כפתור רמקול מובנה) ---
+            const lettersFragment = document.createDocumentFragment();
+            shuffle([...gameState]).forEach(item => {
+                const letterBox = document.createElement('div');
+                letterBox.className = 'letter-item';
+                letterBox.id = `letter-${item.id}`;
+                
+                // הוספת האות כטקסט חופשי בתוך הקוביה
+                letterBox.textContent = item.missingLetter;
+
+                // יצירת כפתור הרמקול בתוך תיבת האות
+                const speakBtn = document.createElement('button');
+                speakBtn.className = 'speak-btn';
+                speakBtn.innerHTML = '🔊';
+                
+                // אירוע לחיצה שמקריא רק את האות ועוצר את הגרירה
+                speakBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+                speakBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+                speakBtn.addEventListener('click', (e) => { 
+                    e.stopPropagation(); 
+                    speakText(item.missingLetter); 
+                });
+                
+                letterBox.appendChild(speakBtn);
+
+                // לוגיקת הגרירה
+                let startX, startY;
+                
+                const moveHandler = (e) => {
+                    const point = e.touches ? e.touches[0] : e;
+                    const deltaX = point.clientX - startX;
+                    const deltaY = point.clientY - startY;
+                    letterBox.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.15)`;
+                };
+
+                const endHandler = (e) => {
+                    const point = e.changedTouches ? e.changedTouches[0] : e;
+                    letterBox.classList.remove('dragging');
+                    
+                    letterBox.style.display = 'none';
+                    const elementBelow = document.elementFromPoint(point.clientX, point.clientY);
+                    letterBox.style.display = 'flex';
+
+                    const zone = elementBelow ? elementBelow.closest('.word-zone') : null;
+
+                    if (zone && zone.dataset.id == item.id && !zone.classList.contains('matched')) {
+                        handleWin(item.id, zone, item);
+                    } else {
+                        letterBox.style.transform = "translate(0, 0) scale(1)";
+                        if (zone) handleError(zone);
+                    }
+
+                    window.removeEventListener('mousemove', moveHandler);
+                    window.removeEventListener('mouseup', endHandler);
+                    window.removeEventListener('touchmove', moveHandler);
+                    window.removeEventListener('touchend', endHandler);
+                };
+
+                const startHandler = (e) => {
+                    // הגנה: אם הילד לחץ על הרמקול, לא מתחילים גרירה
+                    if (e.target.classList.contains('speak-btn')) return;
+                    
+                    if (e.type === 'touchstart') e.preventDefault();
+                    const point = e.touches ? e.touches[0] : e;
+                    startX = point.clientX;
+                    startY = point.clientY;
+                    
+                    letterBox.classList.add('dragging');
+                    
+                    window.addEventListener('mousemove', moveHandler);
+                    window.addEventListener('mouseup', endHandler);
+                    window.addEventListener('touchmove', moveHandler, { passive: false });
+                    window.addEventListener('touchend', endHandler);
+                };
+
+                letterBox.addEventListener('mousedown', startHandler);
+                letterBox.addEventListener('touchstart', startHandler, { passive: false });
+
+                lettersFragment.appendChild(letterBox);
+            });
+            lettersCol.appendChild(lettersFragment);
+
+            // --- 2. יצירת טור המילים ---
+            const wordsFragment = document.createDocumentFragment();
+            shuffle([...gameState]).forEach(item => {
+                const zone = document.createElement('div');
+                zone.className = 'word-zone';
+                zone.dataset.id = item.id;
+
+                const speakBtn = document.createElement('button');
+                speakBtn.className = 'speak-btn';
+                speakBtn.innerHTML = '🔊';
+                speakBtn.addEventListener('click', (e) => { e.stopPropagation(); speakText(item.fullWord); });
+                zone.appendChild(speakBtn);
+
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'image-container';
+                const canvas = document.createElement('canvas');
+                imgContainer.appendChild(canvas);
+                zone.appendChild(imgContainer);
+
+                const wordDisplay = document.createElement('div');
+                wordDisplay.className = 'word-display';
+                
+                for (let i = 0; i < item.fullWord.length; i++) {
+                    if (i === item.missingIndex) {
+                        const slot = document.createElement('span');
+                        slot.className = 'missing-letter-slot';
+                        slot.textContent = '_';
+                        wordDisplay.appendChild(slot);
+                    } else {
+                        const charSpan = document.createElement('span');
+                        charSpan.textContent = item.fullWord[i];
+                        wordDisplay.appendChild(charSpan);
+                    }
+                }
+                zone.appendChild(wordDisplay);
+
+                const ro = new ResizeObserver(() => { drawEmojiOnCanvas(canvas, item.icon); });
+                ro.observe(imgContainer);
+
+                wordsFragment.appendChild(zone);
+            });
+            wordsCol.appendChild(wordsFragment);
+        }
+
+        function handleWin(id, zone, item) {
+            matchesCount++;
+            document.getElementById('successSound').play();
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#6c5ce7', '#00b894', '#fd79a8'] });
+            
+            zone.classList.add('matched');
+            
+            const wordDisplay = zone.querySelector('.word-display');
+            wordDisplay.innerHTML = '';
+            for(let i=0; i<item.fullWord.length; i++) {
+                const span = document.createElement('span');
+                span.textContent = item.fullWord[i];
+                if(i === item.missingIndex) {
+                    span.style.color = '#fff';
+                    span.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+                }
+                wordDisplay.appendChild(span);
+            }
+
+            document.getElementById(`letter-${id}`).classList.add('hidden');
+            
+            if (matchesCount === totalRows) setTimeout(showVictoryScreen, 1000);
+        }
+
+        function handleError(zone) {
+            document.getElementById('errorSound').play();
+            zone.classList.add('error-shake');
+            setTimeout(() => zone.classList.remove('error-shake'), 400);
+        }
+
+        function showVictoryScreen() {
+            const emojiContainer = document.getElementById('victory-emojis');
+            emojiContainer.innerHTML = '';
+            document.getElementById('victory-screen').style.display = 'flex';
+            
+            const icons = wordPool.map(e => e.icon);
+            for (let i = 0; i < 40; i++) {
+                const emojiEl = document.createElement('div'); 
+                emojiEl.className = 'falling-emoji';
+                emojiEl.textContent = icons[Math.floor(Math.random() * icons.length)];
+                emojiEl.style.left = Math.random() * 100 + 'vw';
+                const size = Math.random() * (50 - 20) + 20; 
+                emojiEl.style.fontSize = size + 'px';
+                const duration = Math.random() * (6 - 3) + 3; 
+                emojiEl.style.animationDuration = duration + 's';
+                emojiEl.style.animationDelay = Math.random() * 2 + 's';
+                emojiContainer.appendChild(emojiEl);
+            }
+            setTimeout(() => { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); }, 300);
+        }
+
+        function closeVictory() {
+            document.getElementById('victory-screen').style.display = 'none';
+            renderGame();
+        }
+
+        window.speechSynthesis.getVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+
+        renderGame();
+    </script>
+</body>
+</html>
