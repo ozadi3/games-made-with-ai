@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>משחק האות החסרה ✨</title>
     
-    <!-- ספריית קונפטי לחגיגת ניצחון -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
     <style>
@@ -372,23 +371,75 @@
     <script>
         let totalRows = 4; 
         let matchesCount = 0; 
+        let activeGameState = []; // שמירת מצב המשחק הנוכחי לבדיקת התאמות מדויקת
 
         const wordPool = [
-            { icon: "🍎", word: "תפוח" },
-            { icon: "🎈", word: "בלון" },
-            { icon: "🐱", word: "חתול" },
-            { icon: "🏡", word: "בית" },
-            { icon: "🚗", word: "מכונית" },
-            { icon: "🍌", word: "בננה" },
+            // --- מילים קצרות (3 אותיות) ---
             { icon: "☀️", word: "שמש" },
-            { icon: "🧅", word: "בצל" },
+            { icon: "🎈", word: "בלון" },
             { icon: "🐟", word: "דג" },
+            { icon: "🏡", word: "בית" },
             { icon: "🌳", word: "עץ" },
             { icon: "👑", word: "כתר" },
-            { icon: "🍦", word: "גלידה" },
+            { icon: "🧅", word: "בצל" },
+            { icon: "🏹", word: "חץ" },
+            { icon: "❤️", word: "לב" },
+            { icon: "🥕", word: "גזר" },
+            { icon: "🐘", word: "פיל" },
+            { icon: "🐍", word: "נחש" },
+            { icon: "🌸", word: "פרח" },
+            { icon: "📚", word: "ספר" },
+            { icon: "🍓", word: "תות" },
+
+            // --- מילים בינוניות (4 אותיות) ---
+            { icon: "🍎", word: "תפוח" },
+            { icon: "🐱", word: "חתול" },
+            { icon: "🍌", word: "בננה" },
             { icon: "🕊️", word: "יונה" },
             { icon: "👟", word: "נעל" },
-            { icon: "🔔", word: "פעמון" }
+            { icon: "🦁", word: "אריה" },
+            { icon: "🌈", word: "קשת" },
+            { icon: "⏰", word: "שעון" },
+            { icon: "⚽", word: "כדור" },
+            { icon: "🎒", word: "תיק" },
+            { icon: "🦓", word: "זברה" },
+            { icon: "Ant", word: "נמלה" },
+            { icon: "🍋", word: "לימון" },
+            { icon: "🥚", word: "ביצה" },
+            { icon: "🍇", word: "ענב" },
+            { icon: "🔑", word: "מפתח" },
+            { icon: "🪑", word: "כיסא" },
+            { icon: "🎩", word: "כובע" },
+            { icon: "⚡", word: "ברק" },
+            { icon: "🐭", word: "עכבר" },
+
+            // --- מילים ארוכות (5 אותיות) ---
+            { icon: "🚗", word: "מכונית" },
+            { icon: "🍦", word: "גלידה" },
+            { icon: "🔔", word: "פעמון" },
+            { icon: "🚀", word: "חללית" },
+            { icon: "✈️", word: "מטוס" },
+            { icon: "🐸", word: "צפרדע" },
+            { icon: "👗", word: "שמלה" },
+            { icon: "🍉", word: "אבטיח" },
+            { icon: "🐊", word: "תנין" },
+            { icon: "☂️", word: "מטריה" },
+            { icon: "🎸", word: "גיטרה" },
+            { icon: "✂️", word: "מספריים" },
+            { icon: "👓", word: "משקפיים" },
+            { icon: "🍫", word: "שוקולד" },
+            { icon: "📱", word: "טלפון" },
+
+            // --- אתגרי כתיב ואותיות מיוחדות ---
+            { icon: "🐻", word: "דוב" },
+            { icon: "🐵", word: "קוף" },
+            { icon: "🐺", word: "זאב" },
+            { icon: "🐓", word: "תרנגול" },
+            { icon: "🫒", word: "זית" },
+            { icon: "🍄", word: "פטריה" },
+            { icon: "⛵", word: "סירה" },
+            { icon: "🦊", word: "שועל" },
+            { icon: "🐙", word: "תמנון" }
         ];
 
         function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
@@ -446,7 +497,8 @@
 
             const selectedItems = shuffle([...wordPool]).slice(0, totalRows);
 
-            const gameState = selectedItems.map((item, index) => {
+            // שמירה למשתנה הגלובלי כדי לאפשר בדיקה מכל מקום במסך
+            activeGameState = selectedItems.map((item, index) => {
                 let missingIndex = 0;
                 if (difficulty === 'last') {
                     missingIndex = item.word.length - 1;
@@ -465,10 +517,13 @@
 
             // --- 1. יצירת טור האותיות (עם כפתור רמקול מובנה) ---
             const lettersFragment = document.createDocumentFragment();
-            shuffle([...gameState]).forEach(item => {
+            shuffle([...activeGameState]).forEach(item => {
                 const letterBox = document.createElement('div');
                 letterBox.className = 'letter-item';
+                
                 letterBox.id = `letter-${item.id}`;
+                letterBox.dataset.letter = item.missingLetter; // שמירת האות לבדיקה טקסטואלית
+                letterBox.dataset.originalId = item.id;        // שמירת ה-ID המקורי להעלמה נכונה
                 
                 // הוספת האות כטקסט חופשי בתוך הקוביה
                 letterBox.textContent = item.missingLetter;
@@ -508,8 +563,17 @@
 
                     const zone = elementBelow ? elementBelow.closest('.word-zone') : null;
 
-                    if (zone && zone.dataset.id == item.id && !zone.classList.contains('matched')) {
-                        handleWin(item.id, zone, item);
+                    if (zone && !zone.classList.contains('matched')) {
+                        const targetId = zone.dataset.id;
+                        const targetItem = activeGameState.find(g => g.id == targetId);
+
+                        // התיקון המרכזי: בדיקה לפי תוכן האות במקום לפי ה-ID של השורה
+                        if (letterBox.dataset.letter === targetItem.missingLetter) {
+                            handleWin(letterBox.dataset.originalId, zone, targetItem);
+                        } else {
+                            letterBox.style.transform = "translate(0, 0) scale(1)";
+                            handleError(zone);
+                        }
                     } else {
                         letterBox.style.transform = "translate(0, 0) scale(1)";
                         if (zone) handleError(zone);
@@ -547,7 +611,7 @@
 
             // --- 2. יצירת טור המילים ---
             const wordsFragment = document.createDocumentFragment();
-            shuffle([...gameState]).forEach(item => {
+            shuffle([...activeGameState]).forEach(item => {
                 const zone = document.createElement('div');
                 zone.className = 'word-zone';
                 zone.dataset.id = item.id;
@@ -589,7 +653,7 @@
             wordsCol.appendChild(wordsFragment);
         }
 
-        function handleWin(id, zone, item) {
+        function handleWin(originalLetterId, zone, item) {
             matchesCount++;
             document.getElementById('successSound').play();
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#6c5ce7', '#00b894', '#fd79a8'] });
@@ -608,7 +672,8 @@
                 wordDisplay.appendChild(span);
             }
 
-            document.getElementById(`letter-${id}`).classList.add('hidden');
+            // העלמת האות הספציפית שגררנו
+            document.getElementById(`letter-${originalLetterId}`).classList.add('hidden');
             
             if (matchesCount === totalRows) setTimeout(showVictoryScreen, 1000);
         }
