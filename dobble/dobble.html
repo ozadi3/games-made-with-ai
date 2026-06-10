@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>משחק דאבל צבעוני לילדים!</title>
+    <style>
+        :root {
+            --primary: #ff6b6b;
+            --primary-hover: #ff5252;
+            --secondary: #4ecdc4;
+            --bg: #f7fff7;
+            --card-bg: #ffffff;
+            --accent: #ffe66d;
+            --text-color: #2f3e46;
+            --success: #2ecc71;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 5px 0;
+            color: #1a535c;
+            text-align: center;
+            text-shadow: 3px 3px 0px var(--accent);
+        }
+
+        p {
+            margin: 5px 0 15px 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #4a5759;
+        }
+
+        /* מסך הרשמה */
+        #setup-screen {
+            background: white;
+            padding: 30px;
+            border-radius: 28px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            border: 5px solid var(--secondary);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #1a535c;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 14px;
+            border: 3px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            box-sizing: border-box;
+            background-color: #f8fafc;
+            transition: border-color 0.2s;
+            text-align: center;
+            font-family: inherit;
+            color: var(--text-color);
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+
+        /* מסך המשחק המרכזי */
+        #game-screen {
+            display: none;
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+        }
+
+        #scoreboard {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+            margin-bottom: 20px;
+            border: 3px solid #e2e8f0;
+        }
+
+        .player-score {
+            display: flex;
+            flex-direction: column;
+            padding: 8px 20px;
+            border-radius: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .player-score.active-p {
+            background-color: #ffe66d;
+            box-shadow: inset 0 0 0 2px #f59e0b;
+        }
+        .player-score .name { font-size: 1.2rem; font-weight: bold; color: #1a535c; }
+        .player-score .time { font-size: 1.6rem; font-weight: 900; color: #ff6b6b; }
+
+        #diff-display {
+            font-size: 1.05rem; 
+            color: #4a5759; 
+            font-weight: bold;
+            background: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        #live-status {
+            background: var(--secondary);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: inline-block;
+            box-shadow: 0 6px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        #timer {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+        }
+
+        /* אזור קלפים שנמתח ומנצל את המסך */
+        #cards-container {
+            display: flex;
+            gap: 5vw;
+            margin-bottom: 30px;
+            justify-content: center;
+            perspective: 1500px;
+            width: 100%;
+        }
+
+        /* גודל קלף אופטימלי ונמתח */
+        .card-perspective {
+            width: 42vw;
+            height: 42vw;
+            max-width: 320px;
+            max-height: 320px;
+            min-width: 160px;
+            min-height: 160px;
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            /* אנימציה איטית, חלקה ואלסטית יותר */
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotateY(180deg) translateX(0); }
+            25% { transform: rotateY(180deg) translateX(-10px); }
+            75% { transform: rotateY(180deg) translateX(10px); }
+        }
+        .card-inner.shake {
+            animation: shake 0.3s ease-in-out infinite;
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        /* גב הקלף */
+        .card-back {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            border: 8px solid white;
+            color: white;
+            font-size: 5rem;
+            font-weight: bold;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.15);
+        }
+
+        /* פנים הקלף */
+        .card-front {
+            background: var(--card-bg);
+            border: 8px solid var(--secondary);
+            transform: rotateY(180deg);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 5%; /* צמצום הריפוד כדי לתת מקום לאימוג'ים */
+            transition: border-color 0.2s;
+            align-items: center;
+            justify-items: center;
+        }
+
+        /* הגדלה משמעותית של האייקונים פנימה */
+        .symbol {
+            font-size: 3rem; /* ברירת מחדל גדולה למסכים רגילים */
+            font-size: calc(1.5rem + 3vw); /* גודל דינמי ענק שנמתח עם המסך */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* הגבלת גודל מקסימלי לאימוג'י במסכים גדולים מאוד כדי שלא יגלוש מהעיגול */
+        @media (min-width: 700px) {
+            .symbol { font-size: 4.2rem; }
+        }
+
+        .symbol:active { transform: scale(1.3); }
+
+        /* פיזור סימנים לפי כמות בקלף */
+        .card-front.symbols-5 .symbol:nth-child(1) { grid-area: 1 / 2; transform: scale(1.1); }
+        .card-front.symbols-5 .symbol:nth-child(2) { grid-area: 2 / 1; transform: scale(0.9); }
+        .card-front.symbols-5 .symbol:nth-child(3) { grid-area: 2 / 2; transform: scale(1.3); }
+        .card-front.symbols-5 .symbol:nth-child(4) { grid-area: 2 / 3; transform: scale(0.85); }
+        .card-front.symbols-5 .symbol:nth-child(5) { grid-area: 3 / 2; transform: scale(1.05); }
+
+        .card-front.symbols-6 .symbol:nth-child(1) { grid-area: 1 / 2; transform: scale(0.95); }
+        .card-front.symbols-6 .symbol:nth-child(2) { grid-area: 2 / 1; transform: scale(0.85); }
+        .card-front.symbols-6 .symbol:nth-child(3) { grid-area: 2 / 2; transform: scale(1.05); }
+        .card-front.symbols-6 .symbol:nth-child(4) { grid-area: 2 / 3; transform: scale(0.85); }
+        .card-front.symbols-6 .symbol:nth-child(5) { grid-area: 3 / 1; transform: scale(0.9); }
+        .card-front.symbols-6 .symbol:nth-child(6) { grid-area: 3 / 3; transform: scale(0.9); }
+        .card-front.symbols-6 .symbol { font-size: calc(1.2rem + 2.5vw); }
+
+        .card-front.symbols-7 .symbol:nth-child(1) { grid-area: 1 / 2; transform: scale(0.9); }
+        .card-front.symbols-7 .symbol:nth-child(2) { grid-area: 2 / 1; transform: scale(0.8); }
+        .card-front.symbols-7 .symbol:nth-child(3) { grid-area: 2 / 2; transform: scale(1.1); }
+        .card-front.symbols-7 .symbol:nth-child(4) { grid-area: 2 / 3; transform: scale(0.8); }
+        .card-front.symbols-7 .symbol:nth-child(5) { grid-area: 3 / 1; transform: scale(0.85); }
+        .card-front.symbols-7 .symbol:nth-child(6) { grid-area: 3 / 2; transform: scale(0.95); }
+        .card-front.symbols-7 .symbol:nth-child(7) { grid-area: 3 / 3; transform: scale(0.85); }
+        .card-front.symbols-7 .symbol { font-size: calc(1rem + 2.2vw); }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px 36px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 0px #d94e4e;
+            transition: all 0.1s ease;
+            width: 90%;
+            max-width: 350px;
+            margin-top: 10px;
+        }
+
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0px #d94e4e;
+        }
+
+        button:disabled {
+            background-color: #cbd5e1;
+            box-shadow: 0 4px 0px #94a3b8;
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: white;
+            color: var(--primary);
+            text-decoration: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--primary);
+            transition: 0.3s;
+        }
+
+        .home-button:hover { transform: scale(1.1); }
+
+        @media (max-width: 600px) {
+            .home-button { width: 50px; height: 50px; font-size: 24px; top: 15px; left: 15px; }
+        }
+
+        #timer.penalty-flash {
+            color: #e74c3c;
+            animation: penalty-pulse 0.4s ease;
+        }
+
+        @keyframes penalty-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+    </style>
+</head>
+<body onclick="unlockAudio()">
+
+    <a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
+
+    <div id="setup-screen">
+        <h1>דאבל לילדים! 🎈</h1>
+        <p>משחק מציאת סימנים מהיר וחווייתי</p>
+        <div class="input-group">
+            <label>🎈 שם שחקן 1:</label>
+            <input type="text" id="p1-input" value="יוסי">
+        </div>
+        <div class="input-group">
+            <label>🌟 שם שחקן 2:</label>
+            <input type="text" id="p2-input" value="דנה">
+        </div>
+        <div class="input-group">
+            <label>🎯 כמות סימנים בקלף:</label>
+            <select id="symbols-select">
+                <option value="5" selected>5 סימנים (קל)</option>
+                <option value="6">6 סימנים (בינוני)</option>
+                <option value="7">7 סימנים (מאתגר)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>🔄 מספר סבבים:</label>
+            <select id="rounds-select">
+                <option value="3">3 סבבים</option>
+                <option value="4">4 סבבים</option>
+                <option value="5" selected>5 סבבים</option>
+            </select>
+        </div>
+        <button onclick="startGame()">מתחילים לשחק! 🚀</button>
+    </div>
+
+    <div id="game-screen">
+        <h1>סבב <span id="round-num">1</span> מתוך <span id="round-total">5</span></h1>
+        
+        <div id="scoreboard">
+            <div class="player-score" id="p1-area">
+                <span class="name" id="p1-label">שחקן 1</span>
+                <span class="time"><span id="p1-time">0.00</span> ש'</span>
+            </div>
+            <div id="diff-display">מתחילים...</div>
+            <div class="player-score" id="p2-area">
+                <span class="name" id="p2-label">שחקן 2</span>
+                <span class="time"><span id="p2-time">0.00</span> ש'</span>
+            </div>
+        </div>
+
+        <div id="live-status">מוכנים? לקפוץ על הקלפים!</div>
+        <div id="timer">0.00</div>
+
+        <div id="cards-container">
+            <div class="card-perspective">
+                <div class="card-inner" id="card1-inner">
+                    <div class="card-back">⭐</div>
+                    <div class="card-front" id="card1-front"></div>
+                </div>
+            </div>
+            <div class="card-perspective">
+                <div class="card-inner" id="card2-inner">
+                    <div class="card-back">⭐</div>
+                    <div class="card-front" id="card2-front"></div>
+                </div>
+            </div>
+        </div>
+
+        <button id="action-btn" onclick="startTurn()">הפוך קלפים! 🃏</button>
+    </div>
+
+    <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/3090/3090-preview.mp3" type="audio/mpeg"></audio>
+
+    <script>
+        const allSymbols = ['🍎', '🍌', '🍓', '🍉', '🐱', '🐶', '🦁', '🐵', '🐸', '🦄', '🚗', '✈️', '🚂', '🚁', '🍕', '🍦', '🍩', '🍫', '⚽', '🏀', '🎈', '🎁', '👑', '🌈', '☀️', '🌙', '🎨', '🎸'];
+
+        let p1Name, p2Name;
+        let currentRound = 1;
+        let currentPlayer = 1;
+        let p1TotalTime = 0;
+        let p2TotalTime = 0;
+        let symbolsPerCard = 5;
+        let totalRounds = 5;
+        
+        let startTime, timerInterval, commonSymbol;
+        let isTurnActive = false;
+
+        const setupScreen = document.getElementById('setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const actionBtn = document.getElementById('action-btn');
+        const liveStatus = document.getElementById('live-status');
+        const timerDisplay = document.getElementById('timer');
+        const diffDisplay = document.getElementById('diff-display');
+        
+        const card1Inner = document.getElementById('card1-inner');
+        const card2Inner = document.getElementById('card2-inner');
+        const card1Front = document.getElementById('card1-front');
+        const card2Front = document.getElementById('card2-front');
+
+        let audioUnlocked = false;
+        let penaltyStatusTimeout = null;
+
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            const utterance = new SpeechSynthesisUtterance("");
+            window.speechSynthesis.speak(utterance);
+            audioUnlocked = true;
+        }
+
+        function playSuccessSound() {
+            if (!audioUnlocked) return;
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+            gain1.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start();
+            osc1.stop(ctx.currentTime + 0.2);
+
+            setTimeout(() => {
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+                gain2.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start();
+                osc2.stop(ctx.currentTime + 0.3);
+            }, 100);
+        }
+
+        function playFailSound() {
+            if (!audioUnlocked) return;
+            const errorSound = document.getElementById('errorSound');
+            errorSound.currentTime = 0;
+            errorSound.play();
+        }
+
+        function speak(text, langOrOptions = 'he-IL') {
+            const options = typeof langOrOptions === 'string'
+                ? { lang: langOrOptions }
+                : langOrOptions;
+            const { lang = 'he-IL', rate = 0.85, pitch = 1, onend, cancel = true } = options;
+
+            if (cancel) window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            const voices = window.speechSynthesis.getVoices();
+            const hebrewVoice = voices.find(v => v.lang.includes('he'));
+            const englishVoice = voices.find(v => v.lang.includes('en-US')) || voices.find(v => v.lang.includes('en'));
+            utterance.voice = lang.startsWith('en') ? englishVoice : hebrewVoice;
+            if (onend) utterance.onend = onend;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function playSuspenseDrumroll() {
+            if (!audioUnlocked) return;
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            for (let i = 0; i < 10; i++) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                const t = ctx.currentTime + i * 0.14;
+                osc.frequency.setValueAtTime(70 + i * 6, t);
+                gain.gain.setValueAtTime(0.09, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.11);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + 0.11);
+            }
+        }
+
+        function announceGameStart() {
+            playSuspenseDrumroll();
+            speak("Let's get ready to rummmmble!", {
+                lang: 'en-US',
+                rate: 0.58,
+                pitch: 0.88
+            });
+        }
+
+        function announceWinner(winnerName, isTie) {
+            setTimeout(() => {
+                playSuspenseDrumroll();
+                speak("And the winner is......", {
+                    lang: 'en-US',
+                    rate: 0.52,
+                    pitch: 0.95,
+                    onend: () => {
+                        setTimeout(() => {
+                            playSuccessSound();
+                            if (isTie) {
+                                speak("It's a tie! You are both champions!", { lang: 'en-US', rate: 0.88, pitch: 1.1 });
+                            } else {
+                                speak(winnerName + "!", { lang: 'he-IL', rate: 0.92, pitch: 1.15 });
+                            }
+                        }, 1800);
+                    }
+                });
+            }, 700);
+        }
+
+        function applyPenalty() {
+            startTime -= 1000;
+            timerDisplay.innerText = ((performance.now() - startTime) / 1000).toFixed(2);
+            timerDisplay.classList.add('penalty-flash');
+            setTimeout(() => timerDisplay.classList.remove('penalty-flash'), 400);
+
+            const activeName = currentPlayer === 1 ? p1Name : p2Name;
+            liveStatus.innerText = `עונש! +1 שנייה ל-${activeName} ⏱️`;
+            clearTimeout(penaltyStatusTimeout);
+            penaltyStatusTimeout = setTimeout(() => {
+                liveStatus.innerText = `תור המקצה של: ${activeName} ✨`;
+            }, 900);
+        }
+
+        function startGame() {
+            p1Name = document.getElementById('p1-input').value.trim() || "שחקן 1";
+            p2Name = document.getElementById('p2-input').value.trim() || "שחקן 2";
+            symbolsPerCard = parseInt(document.getElementById('symbols-select').value, 10);
+            totalRounds = parseInt(document.getElementById('rounds-select').value, 10);
+            
+            document.getElementById('p1-label').innerText = "🎈 " + p1Name;
+            document.getElementById('p2-label').innerText = "🌟 " + p2Name;
+
+            unlockAudio();
+            setupScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            resetGameMetrics();
+            announceGameStart();
+        }
+
+        function resetGameMetrics() {
+            currentRound = 1;
+            currentPlayer = 1;
+            p1TotalTime = 0;
+            p2TotalTime = 0;
+            document.getElementById('p1-time').innerText = "0.00";
+            document.getElementById('p2-time').innerText = "0.00";
+            document.getElementById('round-num').innerText = "1";
+            document.getElementById('round-total').innerText = totalRounds;
+            actionBtn.style.display = 'inline-block';
+            timerDisplay.style.display = 'block';
+            updateDiffDisplay();
+            prepareNextTurnStatus();
+        }
+
+        function updateDiffDisplay() {
+            if (p1TotalTime === 0 && p2TotalTime === 0) {
+                diffDisplay.innerText = "תיקו!";
+            } else {
+                const diff = Math.abs(p1TotalTime - p2TotalTime).toFixed(2);
+                if (p1TotalTime < p2TotalTime) {
+                    diffDisplay.innerText = `🏆 ${p1Name} מוביל/ה ב-${diff} ש'`;
+                } else if (p2TotalTime < p1TotalTime) {
+                    diffDisplay.innerText = `🏆 ${p2Name} מוביל/ה ב-${diff} ש'`;
+                } else {
+                    diffDisplay.innerText = "תיקו צמוד!";
+                }
+            }
+        }
+
+        function prepareNextTurnStatus() {
+            const activeName = currentPlayer === 1 ? p1Name : p2Name;
+            liveStatus.innerText = `תור המקצה של: ${activeName} ✨`;
+            actionBtn.innerText = `הפוך קלפים (${activeName})`;
+            actionBtn.disabled = false;
+            
+            if (currentPlayer === 1) {
+                document.getElementById('p1-area').classList.add('active-p');
+                document.getElementById('p2-area').classList.remove('active-p');
+            } else {
+                document.getElementById('p2-area').classList.add('active-p');
+                document.getElementById('p1-area').classList.remove('active-p');
+            }
+
+            card1Inner.classList.remove('flipped');
+            card2Inner.classList.remove('flipped');
+        }
+
+        function getRandomElements(arr, num) {
+            return [...arr].sort(() => 0.5 - Math.random()).slice(0, num);
+        }
+
+        function generateCards() {
+            const pool = [...allSymbols];
+            const commonIndex = Math.floor(Math.random() * pool.length);
+            commonSymbol = pool[commonIndex];
+            pool.splice(commonIndex, 1);
+
+            const uniqueCount = symbolsPerCard - 1;
+            const unique1 = getRandomElements(pool, uniqueCount);
+            const remainingPool = pool.filter(sym => !unique1.includes(sym));
+            const unique2 = getRandomElements(remainingPool, uniqueCount);
+
+            return {
+                s1: [...unique1, commonSymbol].sort(() => 0.5 - Math.random()),
+                s2: [...unique2, commonSymbol].sort(() => 0.5 - Math.random())
+            };
+        }
+
+        function startTurn() {
+            actionBtn.disabled = true;
+            const { s1, s2 } = generateCards();
+
+            buildCardHTML(card1Front, s1);
+            buildCardHTML(card2Front, s2);
+
+            card1Inner.classList.add('flipped');
+            card2Inner.classList.add('flipped');
+
+            // הטיימר מתחיל בדיוק כשהקלף מסיים להתהפך לחלוטין (800 מילישניות)
+            setTimeout(() => {
+                isTurnActive = true;
+                startTime = performance.now();
+                timerInterval = setInterval(() => {
+                    timerDisplay.innerText = ((performance.now() - startTime) / 1000).toFixed(2);
+                }, 10);
+            }, 800);
+        }
+
+        function buildCardHTML(element, symbols) {
+            element.innerHTML = '';
+            element.className = `card-front symbols-${symbolsPerCard}`;
+            symbols.forEach(sym => {
+                const span = document.createElement('span');
+                span.className = 'symbol';
+                span.innerText = sym;
+                span.onclick = () => checkMatch(sym);
+                element.appendChild(span);
+            });
+        }
+
+        function checkMatch(clickedSymbol) {
+            if (!isTurnActive) return;
+
+            if (clickedSymbol === commonSymbol) {
+                clearInterval(timerInterval);
+                const finalTurnTime = (performance.now() - startTime) / 1000;
+                timerDisplay.innerText = finalTurnTime.toFixed(2);
+                isTurnActive = false;
+                playSuccessSound();
+
+                card1Front.style.borderColor = 'var(--success)';
+                card2Front.style.borderColor = 'var(--success)';
+
+                if (currentPlayer === 1) {
+                    p1TotalTime += finalTurnTime;
+                    document.getElementById('p1-time').innerText = p1TotalTime.toFixed(2);
+                    currentPlayer = 2;
+                } else {
+                    p2TotalTime += finalTurnTime;
+                    document.getElementById('p2-time').innerText = p2TotalTime.toFixed(2);
+                    currentRound++;
+                    currentPlayer = 1;
+                }
+
+                updateDiffDisplay();
+
+                setTimeout(() => {
+                    card1Front.style.borderColor = 'var(--secondary)';
+                    card2Front.style.borderColor = 'var(--secondary)';
+                    if (currentRound <= totalRounds) {
+                        document.getElementById('round-num').innerText = currentRound;
+                        prepareNextTurnStatus();
+                    } else {
+                        endGame();
+                    }
+                }, 1200);
+            } else {
+                playFailSound();
+                applyPenalty();
+
+                card1Inner.classList.add('shake');
+                card2Inner.classList.add('shake');
+                card1Front.style.borderColor = 'var(--primary)';
+                card2Front.style.borderColor = 'var(--primary)';
+                
+                setTimeout(() => {
+                    card1Inner.classList.remove('shake');
+                    card2Inner.classList.remove('shake');
+                    card1Front.style.borderColor = 'var(--secondary)';
+                    card2Front.style.borderColor = 'var(--secondary)';
+                }, 300);
+            }
+        }
+
+        function endGame() {
+            card1Inner.classList.remove('flipped');
+            card2Inner.classList.remove('flipped');
+            actionBtn.style.display = 'none';
+            timerDisplay.style.display = 'none';
+            document.getElementById('p1-area').classList.remove('active-p');
+            document.getElementById('p2-area').classList.remove('active-p');
+
+            let winnerText = "";
+            if (p1TotalTime < p2TotalTime) {
+                winnerText = `🎉 כל הכבוד ל-${p1Name}! ניצחת במשחק! 🎉`;
+            } else if (p2TotalTime < p1TotalTime) {
+                winnerText = `🎉 כל הכבוד ל-${p2Name}! ניצחת במשחק! 🎉`;
+            } else {
+                winnerText = "🤝 וואו! תיקו מושלם! שניכם אלופים!";
+            }
+
+            liveStatus.innerHTML = `<div style="font-size: 1.5rem; color: var(--success); margin-bottom:10px;">סיימנו ${totalRounds} סבבים!</div>${winnerText}`;
+
+            if (p1TotalTime < p2TotalTime) {
+                announceWinner(p1Name, false);
+            } else if (p2TotalTime < p1TotalTime) {
+                announceWinner(p2Name, false);
+            } else {
+                announceWinner(null, true);
+            }
+            
+            const restartBtn = document.createElement('button');
+            restartBtn.innerText = "לשחק שוב? 🔄";
+            restartBtn.style.marginTop = "25px";
+            restartBtn.onclick = () => {
+                restartBtn.remove();
+                setupScreen.style.display = 'block';
+                gameScreen.style.display = 'none';
+            };
+            gameScreen.appendChild(restartBtn);
+        }
+
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    </script>
+</body>
+</html>

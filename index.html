@@ -120,6 +120,7 @@
         .coloring-bg { background: linear-gradient(45deg, #ffeaa7, var(--accent)); }
         .memory-bg { background: linear-gradient(45deg, #fd79a8, var(--accent)); }
         .matching-bg { background: linear-gradient(45deg, #abcaca, var(--accent)); }
+        .dobble-bg { background: linear-gradient(135deg, #ff6b6b, #ff8e8e); }
 
         .game-info {
             padding: 24px;
@@ -378,6 +379,20 @@
                 <p>מצאו את האות החסרה במילה.</p>
                </div>
                <div class="btn-play">למד אותיות בהנאה</div>
+        </div>
+    </a>
+
+    <a href="dobble/dobble.html" onclick="window.onbeforeunload = null;" class="game-card"
+    data-umami-event="Game Click"
+    data-umami-event-name="Dobble"
+    >
+        <div class="game-img dobble-bg">⭐</div>
+        <div class="game-info">
+            <div>
+                <h2>דאבל לילדים</h2>
+                <p>מצאו את הסימן המשותף בין שני הקלפים — משחק מהיר לשני שחקנים!</p>
+            </div>
+            <div class="btn-play">התחרה עכשיו</div>
         </div>
     </a>
 
