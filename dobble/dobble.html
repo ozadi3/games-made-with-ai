@@ -30,6 +30,7 @@
             box-sizing: border-box;
             user-select: none;
             -webkit-user-select: none;
+            overflow: hidden;
         }
 
         h1 {
@@ -57,28 +58,29 @@
             max-width: 420px;
             width: 90%;
             border: 5px solid var(--secondary);
+            z-index: 100;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: right;
         }
 
         .input-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: bold;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #1a535c;
         }
 
         .input-group input,
         .input-group select {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border: 3px solid #e2e8f0;
             border-radius: 20px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             box-sizing: border-box;
             background-color: #f8fafc;
             transition: border-color 0.2s;
@@ -99,9 +101,14 @@
             width: 100%;
             max-width: 900px;
             text-align: center;
+            box-sizing: border-box;
         }
 
-        #scoreboard {
+        /* סגנון ברירת מחדל: מצב תורים */
+        #game-screen.mode-turns {
+            display: block;
+        }
+        #game-screen.mode-turns #scoreboard {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -112,20 +119,55 @@
             margin-bottom: 20px;
             border: 3px solid #e2e8f0;
         }
+        #game-screen.mode-turns #cards-container {
+            display: flex;
+            gap: 5vw;
+            justify-content: center;
+            perspective: 1500px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
 
+        #game-screen.mode-turns #play-area {
+            width: 100%;
+        }
+
+        #game-screen.mode-parallel #play-area {
+            display: contents;
+        }
+
+        /* --- עיצוב בסיסי משותף למצב דו קרב סימולטני במקביל --- */
+        #game-screen.mode-parallel {
+            display: flex !important;
+            height: 100vh;
+            position: relative;
+            padding: 0;
+            margin: 0 auto;
+            box-sizing: border-box;
+            width: 100vw;
+        }
+        #game-screen.mode-parallel #round-header-title {
+            display: none; /* מחביא כותרת עליונה כדי לחסוך מקום */
+        }
+        #game-screen.mode-parallel #scoreboard {
+            display: contents; /* מאפשר לפרק את אזורי השחקנים למיקומים חופשיים */
+        }
+
+        /* עיצוב כללי של אזורי שחקן */
         .player-score {
             display: flex;
             flex-direction: column;
             padding: 8px 20px;
             border-radius: 16px;
             transition: background-color 0.3s ease;
+            box-sizing: border-box;
         }
         .player-score.active-p {
             background-color: #ffe66d;
             box-shadow: inset 0 0 0 2px #f59e0b;
         }
-        .player-score .name { font-size: 1.2rem; font-weight: bold; color: #1a535c; }
-        .player-score .time { font-size: 1.6rem; font-weight: 900; color: #ff6b6b; }
+        .player-score .name { font-size: 1.1rem; font-weight: bold; color: #1a535c; white-space: nowrap; }
+        .player-score .time { font-size: 1.4rem; font-weight: 900; color: #ff6b6b; white-space: nowrap; }
 
         #diff-display {
             font-size: 1.05rem; 
@@ -157,24 +199,14 @@
             text-shadow: 2px 2px 0px rgba(0,0,0,0.05);
         }
 
-        /* אזור קלפים שנמתח ומנצל את המסך */
-        #cards-container {
-            display: flex;
-            gap: 5vw;
-            margin-bottom: 30px;
-            justify-content: center;
-            perspective: 1500px;
-            width: 100%;
-        }
-
-        /* גודל קלף אופטימלי ונמתח */
+        /* גודל קלף דינמי - מצב תורים */
         .card-perspective {
             width: 42vw;
             height: 42vw;
-            max-width: 320px;
-            max-height: 320px;
-            min-width: 160px;
-            min-height: 160px;
+            max-width: 310px;
+            max-height: 310px;
+            min-width: 140px;
+            min-height: 140px;
         }
 
         .card-inner {
@@ -182,7 +214,6 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            /* אנימציה איטית, חלקה ואלסטית יותר */
             transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -212,17 +243,15 @@
             box-sizing: border-box;
         }
 
-        /* גב הקלף */
         .card-back {
             background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
             border: 8px solid white;
             color: white;
-            font-size: 5rem;
+            font-size: 4rem;
             font-weight: bold;
             text-shadow: 3px 3px 0px rgba(0,0,0,0.15);
         }
 
-        /* פנים הקלף */
         .card-front {
             background: var(--card-bg);
             border: 8px solid var(--secondary);
@@ -230,16 +259,15 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            padding: 5%; /* צמצום הריפוד כדי לתת מקום לאימוג'ים */
+            padding: 5%;
             transition: border-color 0.2s;
             align-items: center;
             justify-items: center;
         }
 
-        /* הגדלה משמעותית של האייקונים פנימה */
+        /* אייקונים גמישים */
         .symbol {
-            font-size: 3rem; /* ברירת מחדל גדולה למסכים רגילים */
-            font-size: calc(1.5rem + 3vw); /* גודל דינמי ענק שנמתח עם המסך */
+            font-size: calc(1.4rem + 2.8vw);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -249,14 +277,13 @@
             height: 100%;
         }
         
-        /* הגבלת גודל מקסימלי לאימוג'י במסכים גדולים מאוד כדי שלא יגלוש מהעיגול */
         @media (min-width: 700px) {
             .symbol { font-size: 4.2rem; }
         }
 
         .symbol:active { transform: scale(1.3); }
 
-        /* פיזור סימנים לפי כמות בקלף */
+        /* סידור פריסה לפי כמות */
         .card-front.symbols-5 .symbol:nth-child(1) { grid-area: 1 / 2; transform: scale(1.1); }
         .card-front.symbols-5 .symbol:nth-child(2) { grid-area: 2 / 1; transform: scale(0.9); }
         .card-front.symbols-5 .symbol:nth-child(3) { grid-area: 2 / 2; transform: scale(1.3); }
@@ -269,7 +296,7 @@
         .card-front.symbols-6 .symbol:nth-child(4) { grid-area: 2 / 3; transform: scale(0.85); }
         .card-front.symbols-6 .symbol:nth-child(5) { grid-area: 3 / 1; transform: scale(0.9); }
         .card-front.symbols-6 .symbol:nth-child(6) { grid-area: 3 / 3; transform: scale(0.9); }
-        .card-front.symbols-6 .symbol { font-size: calc(1.2rem + 2.5vw); }
+        .card-front.symbols-6 .symbol { font-size: calc(1.2rem + 2.2vw); }
 
         .card-front.symbols-7 .symbol:nth-child(1) { grid-area: 1 / 2; transform: scale(0.9); }
         .card-front.symbols-7 .symbol:nth-child(2) { grid-area: 2 / 1; transform: scale(0.8); }
@@ -278,21 +305,21 @@
         .card-front.symbols-7 .symbol:nth-child(5) { grid-area: 3 / 1; transform: scale(0.85); }
         .card-front.symbols-7 .symbol:nth-child(6) { grid-area: 3 / 2; transform: scale(0.95); }
         .card-front.symbols-7 .symbol:nth-child(7) { grid-area: 3 / 3; transform: scale(0.85); }
-        .card-front.symbols-7 .symbol { font-size: calc(1rem + 2.2vw); }
+        .card-front.symbols-7 .symbol { font-size: calc(1rem + 1.8vw); }
 
         button {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 18px 36px;
-            font-size: 1.4rem;
+            padding: 16px 32px;
+            font-size: 1.3rem;
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
             box-shadow: 0 8px 0px #d94e4e;
             transition: all 0.1s ease;
             width: 90%;
-            max-width: 350px;
+            max-width: 320px;
             margin-top: 10px;
         }
 
@@ -309,6 +336,31 @@
             transform: none;
         }
 
+        /* כפתור הפיכת קלפים — צד ימין, לא במרכז הקלפים */
+        #game-screen #action-btn {
+            position: fixed;
+            right: max(10px, env(safe-area-inset-right));
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 150;
+            width: auto;
+            min-width: 72px;
+            max-width: 112px;
+            margin: 0;
+            padding: 14px 10px;
+            font-size: 0.9rem;
+            line-height: 1.2;
+        }
+
+        #game-screen #action-btn:active {
+            transform: translateY(calc(-50% + 6px));
+            box-shadow: 0 2px 0px #d94e4e;
+        }
+
+        #game-screen #action-btn:disabled {
+            transform: translateY(-50%);
+        }
+
         .home-button {
             position: fixed;
             top: 20px;
@@ -317,22 +369,16 @@
             background: white;
             color: var(--primary);
             text-decoration: none;
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 30px;
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            font-size: 24px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
             border: 2px solid var(--primary);
             transition: 0.3s;
-        }
-
-        .home-button:hover { transform: scale(1.1); }
-
-        @media (max-width: 600px) {
-            .home-button { width: 50px; height: 50px; font-size: 24px; top: 15px; left: 15px; }
         }
 
         #timer.penalty-flash {
@@ -344,21 +390,277 @@
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.08); }
         }
+
+        /* ==========================================================================
+           1. התאמה מוחלטת למסכי פורטרט (Portrait - אורך) במצב מקביל
+           ========================================================================== */
+        @media (orientation: portrait) {
+            #game-screen.mode-parallel {
+                flex-direction: column;
+            }
+            
+            #game-screen.mode-parallel #p1-area {
+                position: absolute;
+                top: 1.5vh; left: 15px; right: 15px;
+                transform: rotate(180deg);
+                background: white;
+                border: 3px solid var(--secondary);
+                border-radius: 15px;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 20px;
+                z-index: 10;
+            }
+
+            #game-screen.mode-parallel #p2-area {
+                position: absolute;
+                bottom: 1.5vh; left: 15px; right: 15px;
+                background: white;
+                border: 3px solid var(--secondary);
+                border-radius: 15px;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 20px;
+                z-index: 10;
+            }
+
+            #game-screen.mode-parallel #cards-container {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                width: 100%;
+                padding: 0; margin: 0;
+                pointer-events: none;
+            }
+
+            #game-screen.mode-parallel .card-perspective {
+                pointer-events: auto;
+                position: absolute;
+                left: 50%;
+                width: 30vh;
+                height: 30vh;
+                max-width: 68vw;
+                max-height: 68vw;
+            }
+
+            #game-screen.mode-parallel #cards-container .card-perspective:first-child {
+                top: 9vh;
+                transform: translateX(-50%) rotate(180deg);
+            }
+
+            #game-screen.mode-parallel #cards-container .card-perspective:nth-child(2) {
+                bottom: 9vh;
+                transform: translateX(-50%);
+            }
+
+            /* תקציב גבהים מדויק ל-HUD המרכזי למניעת חפיפות */
+            #game-screen.mode-parallel #diff-display {
+                position: absolute;
+                top: 41vh; left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                font-size: 0.95rem;
+                padding: 4px 12px;
+            }
+            
+            #game-screen.mode-parallel #live-status {
+                position: absolute;
+                top: 46vh; left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                margin: 0;
+                font-size: 1rem;
+                padding: 6px 16px;
+            }
+
+            #game-screen.mode-parallel #timer {
+                position: absolute;
+                top: 52vh; left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                margin: 0;
+                font-size: 2.4rem;
+                background: rgba(255,255,255,0.85);
+                padding: 0 12px;
+                border-radius: 10px;
+            }
+        }
+
+        /* ==========================================================================
+           2. מהפך מוחלט למסכי לנדסקייפ (Landscape - רוחב) - פריסת ימין ושמאל חכמה
+           ========================================================================== */
+        @media (orientation: landscape) {
+            /* מניעת קריסה כללית במצב תורים */
+            #game-screen.mode-turns .card-perspective {
+                width: 38vh;
+                height: 38vh;
+            }
+            #game-screen.mode-turns #scoreboard {
+                padding: 8px 20px;
+                margin-bottom: 10px;
+            }
+            #game-screen.mode-turns #cards-container {
+                margin-bottom: 16px;
+            }
+            #game-screen.mode-turns #action-btn {
+                min-width: 64px;
+                max-width: 96px;
+                padding: 10px 8px;
+                font-size: 0.82rem;
+            }
+            #game-screen.mode-turns #timer {
+                font-size: 2.2rem;
+                margin-bottom: 5px;
+            }
+            #game-screen.mode-turns #live-status {
+                margin-bottom: 8px;
+                padding: 8px 20px;
+                font-size: 1.1rem;
+            }
+
+            /* פריסת הדו-קרב לרוחב (ימין ושמאל) */
+            #game-screen.mode-parallel {
+                flex-direction: row;
+            }
+
+            #game-screen.mode-parallel #p1-area {
+                position: absolute;
+                top: 3vh; left: 3vw;
+                width: 28vw;
+                transform: rotate(180deg);
+                background: white;
+                border: 3px solid var(--secondary);
+                border-radius: 12px;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 14px;
+                z-index: 10;
+            }
+
+            #game-screen.mode-parallel #p2-area {
+                position: absolute;
+                bottom: 3vh; right: 3vw;
+                width: 28vw;
+                background: white;
+                border: 3px solid var(--secondary);
+                border-radius: 12px;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 14px;
+                z-index: 10;
+            }
+
+            #game-screen.mode-parallel #cards-container {
+                display: flex;
+                flex-direction: row;
+                justify-content: normal;
+                align-items: center;
+                height: 100%;
+                width: 100%;
+                padding: 0; margin: 0;
+                pointer-events: none;
+            }
+
+            #game-screen.mode-parallel .card-perspective {
+                pointer-events: auto;
+                position: absolute;
+                top: 50%;
+                width: 44vh;
+                height: 44vh;
+                max-width: 28vw;
+                max-height: 28vw;
+            }
+
+            /* שחקן 1 בצד שמאל - הפוך */
+            #game-screen.mode-parallel #cards-container .card-perspective:first-child {
+                left: 3vw;
+                transform: translateY(-38%) rotate(180deg);
+            }
+
+            /* שחקן 2 בצד ימין - ישר */
+            #game-screen.mode-parallel #cards-container .card-perspective:nth-child(2) {
+                right: 3vw;
+                transform: translateY(-62%);
+            }
+
+            /* טור שליטה מרכזי אנכי לרוחב למניעת חפיפות */
+            #game-screen.mode-parallel #diff-display {
+                position: absolute;
+                top: 12vh; left: 50%;
+                transform: translateX(-50%);
+                z-index: 20;
+                font-size: 0.95rem;
+                padding: 4px 12px;
+                white-space: nowrap;
+            }
+
+            #game-screen.mode-parallel #live-status {
+                position: absolute;
+                top: 25vh; left: 50%;
+                transform: translateX(-50%);
+                z-index: 20;
+                margin: 0;
+                font-size: 1rem;
+                padding: 6px 16px;
+                white-space: nowrap;
+            }
+
+            #game-screen.mode-parallel #timer {
+                position: absolute;
+                top: 46vh; left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                margin: 0;
+                font-size: 2.6rem;
+                background: rgba(255,255,255,0.85);
+                padding: 0 15px;
+                border-radius: 10px;
+            }
+
+        }
+
+        /* התאמת גודל קטן למסכים נמוכים במיוחד של דף ההרשמה */
+        @media (max-height: 550px) {
+            #setup-screen { padding: 15px; max-width: 380px; }
+            h1 { font-size: 1.8rem; margin: 2px 0; }
+            p { margin: 2px 0 8px 0; font-size: 1rem; }
+            .input-group { margin-bottom: 8px; }
+            .input-group input, .input-group select { padding: 8px; font-size: 1rem; }
+            button { padding: 10px 20px; font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body onclick="unlockAudio()">
 
-    <a href="../index.html" class="home-button" title="חזרה לתפריט הראשי">🏠</a>
+    <a href="../index.html" class="home-button" title="חזרה">🏠</a>
 
     <div id="setup-screen">
-        <h1>דאבל לילדים! 🎈</h1>
+        <h1>דאבל אקסטרים! 🎈</h1>
         <p>משחק מציאת סימנים מהיר וחווייתי</p>
+        
         <div class="input-group">
-            <label>🎈 שם שחקן 1:</label>
+            <label>🎮 מצב משחק:</label>
+            <select id="game-mode-select">
+                <option value="turns" selected>סבבים בתורים (אחד אחרי השני)</option>
+                <option value="parallel">דו-קרב סימולטני (מסך מפוצל ביחד! ⚔️)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>🎈 שם שחקן 1 (למעלה במפוצל):</label>
             <input type="text" id="p1-input" value="יוסי">
         </div>
         <div class="input-group">
-            <label>🌟 שם שחקן 2:</label>
+            <label>🌟 שם שחקן 2 (למטה במפוצל):</label>
             <input type="text" id="p2-input" value="דנה">
         </div>
         <div class="input-group">
@@ -373,47 +675,49 @@
             <label>🔄 מספר סבבים:</label>
             <select id="rounds-select">
                 <option value="3">3 סבבים</option>
-                <option value="4">4 סבבים</option>
                 <option value="5" selected>5 סבבים</option>
+                <option value="7">7 סבבים</option>
             </select>
         </div>
         <button onclick="startGame()">מתחילים לשחק! 🚀</button>
     </div>
 
     <div id="game-screen">
-        <h1>סבב <span id="round-num">1</span> מתוך <span id="round-total">5</span></h1>
+        <h1 id="round-header-title">סבב <span id="round-num">1</span> מתוך <span id="round-total">5</span></h1>
         
         <div id="scoreboard">
             <div class="player-score" id="p1-area">
                 <span class="name" id="p1-label">שחקן 1</span>
-                <span class="time"><span id="p1-time">0.00</span> ש'</span>
+                <span class="time" id="p1-time-box"><span id="p1-time">0.00</span></span>
             </div>
             <div id="diff-display">מתחילים...</div>
             <div class="player-score" id="p2-area">
                 <span class="name" id="p2-label">שחקן 2</span>
-                <span class="time"><span id="p2-time">0.00</span> ש'</span>
+                <span class="time" id="p2-time-box"><span id="p2-time">0.00</span></span>
             </div>
         </div>
 
         <div id="live-status">מוכנים? לקפוץ על הקלפים!</div>
         <div id="timer">0.00</div>
 
-        <div id="cards-container">
-            <div class="card-perspective">
-                <div class="card-inner" id="card1-inner">
-                    <div class="card-back">⭐</div>
-                    <div class="card-front" id="card1-front"></div>
+        <div id="play-area">
+            <div id="cards-container">
+                <div class="card-perspective">
+                    <div class="card-inner" id="card1-inner">
+                        <div class="card-back">⭐</div>
+                        <div class="card-front" id="card1-front"></div>
+                    </div>
+                </div>
+                <div class="card-perspective">
+                    <div class="card-inner" id="card2-inner">
+                        <div class="card-back">⭐</div>
+                        <div class="card-front" id="card2-front"></div>
+                    </div>
                 </div>
             </div>
-            <div class="card-perspective">
-                <div class="card-inner" id="card2-inner">
-                    <div class="card-back">⭐</div>
-                    <div class="card-front" id="card2-front"></div>
-                </div>
-            </div>
-        </div>
 
-        <button id="action-btn" onclick="startTurn()">הפוך קלפים! 🃏</button>
+            <button id="action-btn" onclick="startTurn()">הפוך קלפים! 🃏</button>
+        </div>
     </div>
 
     <audio id="errorSound"><source src="https://assets.mixkit.co/active_storage/sfx/3090/3090-preview.mp3" type="audio/mpeg"></audio>
@@ -421,24 +725,20 @@
     <script>
         const allSymbols = [
             '🍎', '🍌', '🍓', '🍉', '🍇', '🍊', '🍋', '🥥', '🍍', '🍕', '🍔', '🍟', '🍦', '🍩', '🍫', '🍭', '🧁', '🥐',
-            '🥑', '🥨', '🍣', '🥞', '🌽', '🥕', '🌮', '🥪', '🍳', '🍿',
-            '🐱', '🐶', '🦁', '🐵', '🐸', '🦄', '🦖', '🐙', '🐼', '🐰', '🦊', '🐯', '🐷', '🐮', '🐔', '🦆', '🐢', '🐠',
-            '🐬', '🦉', '🐝', '🐞', '🦋', '👻', '👽', '🤖',
-            '🚗', '✈️', '🚂', '🚁', '🚀', '🚢', '🚲', '🛴', '🚌', '🏍️',
-            '⚽', '🏀', '⚾', '🎾', '🏈', '🎯', '🎳', '🎈', '🎁', '👑', '🎨', '🎸', '🎮', '🧩',
-            '🌈', '☀️', '🌙', '🌸', '🌻', '⭐', '🌊', '🍀', '❄️', '🔥', '📚', '🪴', '⏰'
+            '🐱', '🐶', '🦁', '🐵', '🐸', '🦄', '🦖', '🐙', '🐼', '🐰', '🦊', '🐯', '🐷', '🐮', '🐔', '🐢', '🐠', '🦉', 
+            '🚗', '✈️', '🚂', '🚁', '🚀', '🚢', '🛴', '⚽', '🏀', '🎈', '🎁', '👑', '🎨', '🎸', '🎮', '🧩',
+            '🌈', '☀️', '🌙', '🌸', '🌻', '⭐', '🌊', '🍀', '🔥', '⏰'
         ];
 
-        let p1Name, p2Name;
-        let currentRound = 1;
-        let currentPlayer = 1;
-        let p1TotalTime = 0;
-        let p2TotalTime = 0;
-        let symbolsPerCard = 5;
-        let totalRounds = 5;
+        let p1Name, p2Name, gameMode;
+        let currentRound = 1, currentPlayer = 1;
+        let p1TotalTime = 0, p2TotalTime = 0;
+        let p1Points = 0, p2Points = 0;
+        let symbolsPerCard = 5, totalRounds = 5;
         
         let startTime, timerInterval, commonSymbol;
         let isTurnActive = false;
+        let p1Locked = false, p2Locked = false;
 
         const setupScreen = document.getElementById('setup-screen');
         const gameScreen = document.getElementById('game-screen');
@@ -453,130 +753,48 @@
         const card2Front = document.getElementById('card2-front');
 
         let audioUnlocked = false;
-        let penaltyStatusTimeout = null;
 
         function unlockAudio() {
             if (audioUnlocked) return;
-            const utterance = new SpeechSynthesisUtterance("");
-            window.speechSynthesis.speak(utterance);
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
             audioUnlocked = true;
         }
 
         function playSuccessSound() {
             if (!audioUnlocked) return;
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-            const osc1 = ctx.createOscillator();
-            const gain1 = ctx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
-            gain1.gain.setValueAtTime(0.1, ctx.currentTime);
-            gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-            osc1.connect(gain1);
-            gain1.connect(ctx.destination);
-            osc1.start();
-            osc1.stop(ctx.currentTime + 0.2);
-
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + 0.15);
+            
             setTimeout(() => {
                 const osc2 = ctx.createOscillator();
                 const gain2 = ctx.createGain();
-                osc2.type = 'sine';
                 osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
                 gain2.gain.setValueAtTime(0.1, ctx.currentTime);
-                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                osc2.connect(gain2);
-                gain2.connect(ctx.destination);
-                osc2.start();
-                osc2.stop(ctx.currentTime + 0.3);
-            }, 100);
+                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                osc2.connect(gain2); gain2.connect(ctx.destination);
+                osc2.start(); osc2.stop(ctx.currentTime + 0.25);
+            }, 800);
         }
 
         function playFailSound() {
-            if (!audioUnlocked) return;
-            const errorSound = document.getElementById('errorSound');
-            errorSound.currentTime = 0;
-            errorSound.play();
-        }
-
-        function speak(text, langOrOptions = 'he-IL') {
-            const options = typeof langOrOptions === 'string'
-                ? { lang: langOrOptions }
-                : langOrOptions;
-            const { lang = 'he-IL', rate = 0.85, pitch = 1, onend, cancel = true } = options;
-
-            if (cancel) window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = lang;
-            utterance.rate = rate;
-            utterance.pitch = pitch;
-            const voices = window.speechSynthesis.getVoices();
-            const hebrewVoice = voices.find(v => v.lang.includes('he'));
-            const englishVoice = voices.find(v => v.lang.includes('en-US')) || voices.find(v => v.lang.includes('en'));
-            utterance.voice = lang.startsWith('en') ? englishVoice : hebrewVoice;
-            if (onend) utterance.onend = onend;
-            window.speechSynthesis.speak(utterance);
-        }
-
-        function playSuspenseDrumroll() {
-            if (!audioUnlocked) return;
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            for (let i = 0; i < 10; i++) {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'triangle';
-                const t = ctx.currentTime + i * 0.14;
-                osc.frequency.setValueAtTime(70 + i * 6, t);
-                gain.gain.setValueAtTime(0.09, t);
-                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.11);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(t);
-                osc.stop(t + 0.11);
+            if (audioUnlocked) {
+                const sound = document.getElementById('errorSound');
+                sound.currentTime = 0; sound.play();
             }
         }
 
-        function announceGameStart() {
-            playSuspenseDrumroll();
-            speak("Let's get ready to rummmmble!", {
-                lang: 'en-US',
-                rate: 0.58,
-                pitch: 0.88
-            });
-        }
-
-        function announceWinner(winnerName, isTie) {
-            setTimeout(() => {
-                playSuspenseDrumroll();
-                speak("And the winner is......", {
-                    lang: 'en-US',
-                    rate: 0.52,
-                    pitch: 0.95,
-                    onend: () => {
-                        setTimeout(() => {
-                            playSuccessSound();
-                            if (isTie) {
-                                speak("It's a tie! You are both champions!", { lang: 'en-US', rate: 0.88, pitch: 1.1 });
-                            } else {
-                                speak(winnerName + "!", { lang: 'he-IL', rate: 0.92, pitch: 1.15 });
-                            }
-                        }, 1800);
-                    }
-                });
-            }, 700);
-        }
-
-        function applyPenalty() {
-            startTime -= 1000;
-            timerDisplay.innerText = ((performance.now() - startTime) / 1000).toFixed(2);
-            timerDisplay.classList.add('penalty-flash');
-            setTimeout(() => timerDisplay.classList.remove('penalty-flash'), 400);
-
-            const activeName = currentPlayer === 1 ? p1Name : p2Name;
-            liveStatus.innerText = `עונש! +1 שנייה ל-${activeName} ⏱️`;
-            clearTimeout(penaltyStatusTimeout);
-            penaltyStatusTimeout = setTimeout(() => {
-                liveStatus.innerText = `תור המקצה של: ${activeName} ✨`;
-            }, 900);
+        function speak(text) {
+            if (!audioUnlocked) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'he-IL'; u.rate = 0.9;
+            window.speechSynthesis.speak(u);
         }
 
         function startGame() {
@@ -584,63 +802,92 @@
             p2Name = document.getElementById('p2-input').value.trim() || "שחקן 2";
             symbolsPerCard = parseInt(document.getElementById('symbols-select').value, 10);
             totalRounds = parseInt(document.getElementById('rounds-select').value, 10);
+            gameMode = document.getElementById('game-mode-select').value;
             
             document.getElementById('p1-label').innerText = "🎈 " + p1Name;
             document.getElementById('p2-label').innerText = "🌟 " + p2Name;
+
+            gameScreen.className = gameMode === 'parallel' ? 'mode-parallel' : 'mode-turns';
 
             unlockAudio();
             setupScreen.style.display = 'none';
             gameScreen.style.display = 'block';
             resetGameMetrics();
-            announceGameStart();
+            speak("מתחילים לשחק! בהצלחה!");
         }
 
         function resetGameMetrics() {
             currentRound = 1;
             currentPlayer = 1;
-            p1TotalTime = 0;
-            p2TotalTime = 0;
-            document.getElementById('p1-time').innerText = "0.00";
-            document.getElementById('p2-time').innerText = "0.00";
+            p1TotalTime = 0; p2TotalTime = 0;
+            p1Points = 0; p2Points = 0;
+            p1Locked = false; p2Locked = false;
+            
             document.getElementById('round-num').innerText = "1";
             document.getElementById('round-total').innerText = totalRounds;
             actionBtn.style.display = 'inline-block';
             timerDisplay.style.display = 'block';
+            
+            if (gameMode === 'parallel') {
+                document.getElementById('p1-time').innerText = "0 נק'";
+                document.getElementById('p2-time').innerText = "0 נק'";
+            } else {
+                document.getElementById('p1-time').innerText = "0.00 ש'";
+                document.getElementById('p2-time').innerText = "0.00 ש'";
+            }
+            
             updateDiffDisplay();
             prepareNextTurnStatus();
         }
 
         function updateDiffDisplay() {
-            if (p1TotalTime === 0 && p2TotalTime === 0) {
-                diffDisplay.innerText = "תיקו!";
-            } else {
-                const diff = Math.abs(p1TotalTime - p2TotalTime).toFixed(2);
-                if (p1TotalTime < p2TotalTime) {
-                    diffDisplay.innerText = `🏆 ${p1Name} מוביל/ה ב-${diff} ש'`;
-                } else if (p2TotalTime < p1TotalTime) {
-                    diffDisplay.innerText = `🏆 ${p2Name} מוביל/ה ב-${diff} ש'`;
+            if (gameMode === 'parallel') {
+                if (p1Points === p2Points) {
+                    diffDisplay.innerText = "תיקו זמני בנקודות!";
+                } else if (p1Points > p2Points) {
+                    diffDisplay.innerText = `👑 ${p1Name} מוביל ב-${p1Points - p2Points} נק'`;
                 } else {
-                    diffDisplay.innerText = "תיקו צמוד!";
+                    diffDisplay.innerText = `👑 ${p2Name} מוביל ב-${p2Points - p1Points} נק'`;
+                }
+            } else {
+                if (p1TotalTime === 0 && p2TotalTime === 0) {
+                    diffDisplay.innerText = "תיקו!";
+                } else {
+                    const diff = Math.abs(p1TotalTime - p2TotalTime).toFixed(2);
+                    if (p1TotalTime < p2TotalTime) {
+                        diffDisplay.innerText = `🏆 ${p1Name} מהיר/ה ב-${diff} ש'`;
+                    } else if (p2TotalTime < p1TotalTime) {
+                        diffDisplay.innerText = `🏆 ${p2Name} מהיר/ה ב-${diff} ש'`;
+                    } else {
+                        diffDisplay.innerText = "תיקו צמוד!";
+                    }
                 }
             }
         }
 
         function prepareNextTurnStatus() {
-            const activeName = currentPlayer === 1 ? p1Name : p2Name;
-            liveStatus.innerText = `תור המקצה של: ${activeName} ✨`;
-            actionBtn.innerText = `הפוך קלפים (${activeName})`;
-            actionBtn.disabled = false;
-            
-            if (currentPlayer === 1) {
-                document.getElementById('p1-area').classList.add('active-p');
-                document.getElementById('p2-area').classList.remove('active-p');
-            } else {
-                document.getElementById('p2-area').classList.add('active-p');
-                document.getElementById('p1-area').classList.remove('active-p');
-            }
-
             card1Inner.classList.remove('flipped');
             card2Inner.classList.remove('flipped');
+            actionBtn.disabled = false;
+            
+            if (gameMode === 'parallel') {
+                document.getElementById('p1-area').classList.remove('active-p');
+                document.getElementById('p2-area').classList.remove('active-p');
+                liveStatus.innerText = `סבב ${currentRound}: להתכונן לדו-קרב! ⚔️`;
+                actionBtn.innerText = "הפוך קלפים! 🃏";
+            } else {
+                const activeName = currentPlayer === 1 ? p1Name : p2Name;
+                liveStatus.innerText = `תור המקצה של: ${activeName} ✨`;
+                actionBtn.innerText = `הפוך קלפים (${activeName})`;
+                
+                if (currentPlayer === 1) {
+                    document.getElementById('p1-area').classList.add('active-p');
+                    document.getElementById('p2-area').classList.remove('active-p');
+                } else {
+                    document.getElementById('p2-area').classList.add('active-p');
+                    document.getElementById('p1-area').classList.remove('active-p');
+                }
+            }
         }
 
         function getRandomElements(arr, num) {
@@ -668,13 +915,17 @@
             actionBtn.disabled = true;
             const { s1, s2 } = generateCards();
 
-            buildCardHTML(card1Front, s1);
-            buildCardHTML(card2Front, s2);
+            if (gameMode === 'parallel') {
+                buildCardHTML(card1Front, s1, 1);
+                buildCardHTML(card2Front, s2, 2);
+            } else {
+                buildCardHTML(card1Front, s1, currentPlayer);
+                buildCardHTML(card2Front, s2, currentPlayer);
+            }
 
             card1Inner.classList.add('flipped');
             card2Inner.classList.add('flipped');
 
-            // הטיימר מתחיל בדיוק כשהקלף מסיים להתהפך לחלוטין (800 מילישניות)
             setTimeout(() => {
                 isTurnActive = true;
                 startTime = performance.now();
@@ -684,20 +935,28 @@
             }, 800);
         }
 
-        function buildCardHTML(element, symbols) {
+        function buildCardHTML(element, symbols, playerNum) {
             element.innerHTML = '';
             element.className = `card-front symbols-${symbolsPerCard}`;
             symbols.forEach(sym => {
                 const span = document.createElement('span');
                 span.className = 'symbol';
                 span.innerText = sym;
-                span.onclick = () => checkMatch(sym);
+                span.onclick = (e) => {
+                    e.stopPropagation();
+                    checkMatch(sym, playerNum);
+                };
                 element.appendChild(span);
             });
         }
 
-        function checkMatch(clickedSymbol) {
+        function checkMatch(clickedSymbol, playerNum) {
             if (!isTurnActive) return;
+            
+            if (gameMode === 'parallel') {
+                if (playerNum === 1 && p1Locked) return;
+                if (playerNum === 2 && p2Locked) return;
+            }
 
             if (clickedSymbol === commonSymbol) {
                 clearInterval(timerInterval);
@@ -709,15 +968,28 @@
                 card1Front.style.borderColor = 'var(--success)';
                 card2Front.style.borderColor = 'var(--success)';
 
-                if (currentPlayer === 1) {
-                    p1TotalTime += finalTurnTime;
-                    document.getElementById('p1-time').innerText = p1TotalTime.toFixed(2);
-                    currentPlayer = 2;
-                } else {
-                    p2TotalTime += finalTurnTime;
-                    document.getElementById('p2-time').innerText = p2TotalTime.toFixed(2);
+                if (gameMode === 'parallel') {
+                    if (playerNum === 1) {
+                        p1Points++;
+                        document.getElementById('p1-time').innerText = `${p1Points} נק'`;
+                        liveStatus.innerText = `נקודה ל-${p1Name}! 🎈`;
+                    } else {
+                        p2Points++;
+                        document.getElementById('p2-time').innerText = `${p2Points} נק'`;
+                        liveStatus.innerText = `נקודה ל-${p2Name}! 🌟`;
+                    }
                     currentRound++;
-                    currentPlayer = 1;
+                } else {
+                    if (currentPlayer === 1) {
+                        p1TotalTime += finalTurnTime;
+                        document.getElementById('p1-time').innerText = p1TotalTime.toFixed(2) + " ש'";
+                        currentPlayer = 2;
+                    } else {
+                        p2TotalTime += finalTurnTime;
+                        document.getElementById('p2-time').innerText = p2TotalTime.toFixed(2) + " ש'";
+                        currentRound++;
+                        currentPlayer = 1;
+                    }
                 }
 
                 updateDiffDisplay();
@@ -726,69 +998,89 @@
                     card1Front.style.borderColor = 'var(--secondary)';
                     card2Front.style.borderColor = 'var(--secondary)';
                     if (currentRound <= totalRounds) {
-                        document.getElementById('round-num').innerText = currentRound;
+                        if (gameMode !== 'parallel') {
+                            document.getElementById('round-num').innerText = currentRound;
+                        }
                         prepareNextTurnStatus();
                     } else {
                         endGame();
                     }
-                }, 1200);
+                }, 1500);
             } else {
                 playFailSound();
-                applyPenalty();
 
-                card1Inner.classList.add('shake');
-                card2Inner.classList.add('shake');
-                card1Front.style.borderColor = 'var(--primary)';
-                card2Front.style.borderColor = 'var(--primary)';
-                
-                setTimeout(() => {
-                    card1Inner.classList.remove('shake');
-                    card2Inner.classList.remove('shake');
-                    card1Front.style.borderColor = 'var(--secondary)';
-                    card2Front.style.borderColor = 'var(--secondary)';
-                }, 300);
+                if (gameMode === 'parallel') {
+                    if (playerNum === 1) {
+                        p1Locked = true;
+                        card1Inner.classList.add('shake');
+                        card1Front.style.borderColor = 'var(--primary)';
+                        setTimeout(() => {
+                            p1Locked = false;
+                            card1Inner.classList.remove('shake');
+                            card1Front.style.borderColor = 'var(--secondary)';
+                        }, 600);
+                    } else {
+                        p2Locked = true;
+                        card2Inner.classList.add('shake');
+                        card2Front.style.borderColor = 'var(--primary)';
+                        setTimeout(() => {
+                            p2Locked = false;
+                            card2Inner.classList.remove('shake');
+                            card2Front.style.borderColor = 'var(--secondary)';
+                        }, 600);
+                    }
+                } else {
+                    startTime -= 1000;
+                    timerDisplay.classList.add('penalty-flash');
+                    setTimeout(() => timerDisplay.classList.remove('penalty-flash'), 400);
+                }
             }
         }
 
         function endGame() {
+            isTurnActive = false;
+            clearInterval(timerInterval);
+            
             card1Inner.classList.remove('flipped');
             card2Inner.classList.remove('flipped');
+            
             actionBtn.style.display = 'none';
             timerDisplay.style.display = 'none';
-            document.getElementById('p1-area').classList.remove('active-p');
-            document.getElementById('p2-area').classList.remove('active-p');
 
-            let winnerText = "";
-            if (p1TotalTime < p2TotalTime) {
-                winnerText = `🎉 כל הכבוד ל-${p1Name}! ניצחת במשחק! 🎉`;
-            } else if (p2TotalTime < p1TotalTime) {
-                winnerText = `🎉 כל הכבוד ל-${p2Name}! ניצחת במשחק! 🎉`;
+            let finalSpeech = "";
+            if (gameMode === 'parallel') {
+                if (p1Points === p2Points) {
+                    liveStatus.innerText = `🏆 תיקו מושלם של ${p1Points} נקודות! קולולו! 🥳`;
+                    finalSpeech = "תיקו מושלם! כל הכבוד לשניכם!";
+                } else if (p1Points > p2Points) {
+                    liveStatus.innerText = `👑 המנצח הגדול הוא ${p1Name} עם ${p1Points} נקודות! 🎉`;
+                    finalSpeech = `כל הכבוד ל${p1Name} על הניצחון!`;
+                } else {
+                    liveStatus.innerText = `👑 המנצחת הגדולה היא ${p2Name} עם ${p2Points} נקודות! 🎉`;
+                    finalSpeech = `כל הכבוד ל${p2Name} על הניצחון!`;
+                }
             } else {
-                winnerText = "🤝 וואו! תיקו מושלם! שניכם אלופים!";
-            }
-
-            liveStatus.innerHTML = `<div style="font-size: 1.5rem; color: var(--success); margin-bottom:10px;">סיימנו ${totalRounds} סבבים!</div>${winnerText}`;
-
-            if (p1TotalTime < p2TotalTime) {
-                announceWinner(p1Name, false);
-            } else if (p2TotalTime < p1TotalTime) {
-                announceWinner(p2Name, false);
-            } else {
-                announceWinner(null, true);
+                if (p1TotalTime === p2TotalTime) {
+                    liveStatus.innerText = "🏆 תיקו מוחלט בזמנים! לא יאומן! 🤩";
+                    finalSpeech = "תיקו מוחלט בזמנים!";
+                } else if (p1TotalTime < p2TotalTime) {
+                    liveStatus.innerText = `👑 ${p1Name} ניצח/ה עם זמן כולל מהיר של ${p1TotalTime.toFixed(2)} שניות! 🏅`;
+                    finalSpeech = `כל הכבוד ל${p1Name}! הגעת למקום הראשון!`;
+                } else {
+                    liveStatus.innerText = `👑 ${p2Name} ניצח/ה עם זמן כולל מהיר של ${p2TotalTime.toFixed(2)} שניות! 🏅`;
+                    finalSpeech = `כל הכבוד ל${p2Name}! הגעת למקום הראשון!`;
+                }
             }
             
-            const restartBtn = document.createElement('button');
-            restartBtn.innerText = "לשחק שוב? 🔄";
-            restartBtn.style.marginTop = "25px";
-            restartBtn.onclick = () => {
-                restartBtn.remove();
-                setupScreen.style.display = 'block';
-                gameScreen.style.display = 'none';
-            };
-            gameScreen.appendChild(restartBtn);
+            speak("המשחק נגמר! " + finalSpeech);
+            
+            setTimeout(() => {
+                if(confirm("רוצים לשחק שוב?")) {
+                    setupScreen.style.display = 'block';
+                    gameScreen.style.display = 'none';
+                }
+            }, 3000);
         }
-
-        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
     </script>
 </body>
 </html>
