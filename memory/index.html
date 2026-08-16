@@ -94,7 +94,6 @@
             margin-bottom: 5px;
         }
 
-        /* עיצוב כפתור רמז משופר לילדים */
         .hint-btn {
             background: #fff;
             border: 2px solid #ffd32a;
@@ -184,7 +183,6 @@
 
         .card.flipped, .card.xray { transform: rotateY(180deg); }
         
-        /* אפקט רמז "קסום" */
         .card.xray { 
             opacity: 0.8; 
             pointer-events: none; 
@@ -208,6 +206,7 @@
             border-radius: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             border: 3px solid white;
+            overflow: hidden;
         }
 
         .card-front { 
@@ -217,19 +216,28 @@
             font-weight: 900; 
         }
 
+        .card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 6px;
+            border-radius: 12px;
+            pointer-events: none;
+        }
+
         .speak-trigger {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 1.2rem;
-            background: #f0edff;
+            top: 6px;
+            right: 6px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
+            width: 30px;
+            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             z-index: 50;
             pointer-events: auto;
         }
@@ -296,7 +304,8 @@
         }
     </style>
 </head>
-<body onclick="unlockAudio()"> <aside class="sidebar">
+<body onclick="unlockAudio()">
+    <aside class="sidebar">
         <div class="logo">זיכרון ✨</div>
         <div id="scoreboard-container" class="scoreboard-side"></div>
 
@@ -311,6 +320,7 @@
             <label>קטגוריה</label>
             <select id="category-select">
                 <option value="foods">🍕 מאכלים</option>
+                <option value="princesses">👑 נסיכות</option>
                 <option value="characters">🤖 דמויות</option>
                 <option value="letters">🅰️ א-ב</option>
                 <option value="numbers">🔢 1-2-3</option>
@@ -323,8 +333,7 @@
                 <option value="16" selected>16 חלקים</option>
                 <option value="20">20 חלקים</option>
                 <option value="24">24 חלקים</option>
-                <option value="30">30 חלקים</option>
-                <option value="36">36 חלקים</option>
+                <option value="28">28 חלקים</option>
             </select>
             <button onclick="initGame()">התחל! 🚀</button>
         </div>
@@ -356,6 +365,22 @@
 
     const data = {
         foods: ['🍕','🍔','🍟','🍎','🍦','🍩','🥑','🥨','🍓','🍣','🥞','🍉','🌽','🥕','🌮','🥪','🍳','🍿'],
+        princesses: [
+            { id: 'princess_1', img: 'assets/1.png' },
+            { id: 'princess_2', img: 'assets/2.png' },
+            { id: 'princess_3', img: 'assets/3.png' },
+            { id: 'princess_4', img: 'assets/4.png' },
+            { id: 'princess_5', img: 'assets/5.png' },
+            { id: 'princess_6', img: 'assets/6.png' },
+            { id: 'princess_7', img: 'assets/7.png' },
+            { id: 'princess_8', img: 'assets/8.png' },
+            { id: 'princess_9', img: 'assets/9.png' },
+            { id: 'princess_10', img: 'assets/10.png' },
+            { id: 'princess_11', img: 'assets/11.png' },
+            { id: 'princess_12', img: 'assets/12.png' },
+            { id: 'princess_13', img: 'assets/13.png' },
+            { id: 'princess_14', img: 'assets/14.png' }
+        ],
         characters: ['🤖','🦄','🦁','🦖','🐙','🐸','🐼','🐵','👻','👽','🧜‍♀️','🧚‍♂️','🦋','🐱','🐶','🐰','🦊','🐯'],
         furniture: ['🏠','🛋️','🛏️','🪑','🛀','📺','🧺','🪞','🚪','🏮','📚','🪴','🕯️','⏰','🛁','🧱','🔭','🚿'],
         letters: ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'],
@@ -387,39 +412,37 @@
     }
 
     function playSuccessSound() {
-    if (!audioUnlocked) return;
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // צליל ראשון (נמוך)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-    gain1.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start();
-    osc1.stop(ctx.currentTime + 0.2);
+        if (!audioUnlocked) return;
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+        gain1.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.2);
 
-    // צליל שני (גבוה יותר - יוצר תחושת הצלחה)
-    setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
-        gain2.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start();
-        osc2.stop(ctx.currentTime + 0.3);
-    }, 100);
-}
+        setTimeout(() => {
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+            gain2.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start();
+            osc2.stop(ctx.currentTime + 0.3);
+        }, 100);
+    }
 
-    function speak(text, lang = 'he-IL') {
+    function speak(key, lang = 'he-IL') {
         window.speechSynthesis.cancel();
-        const word = emojiNames[text] || text;
+        const word = emojiNames[key] || key;
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = lang;
         utterance.rate = 0.85;
@@ -438,57 +461,61 @@
     }
 
     function initGame() {
-    unlockAudio();
-    const board = document.getElementById('board');
-    const totalCards = parseInt(document.getElementById('size-select').value);
-    const category = document.getElementById('category-select').value;
-    
-    board.innerHTML = '';
-    flipped = [];
-    scores = new Array(playerCount).fill(0);
-    players.forEach(p => p.hintUsed = false);
-    currentPlayer = 0;
-    isLock = false;
-    gameInProgress = false;
-    
-    renderScoreboard();
+        unlockAudio();
+        const board = document.getElementById('board');
+        const totalCards = parseInt(document.getElementById('size-select').value);
+        const category = document.getElementById('category-select').value;
+        
+        board.innerHTML = '';
+        flipped = [];
+        scores = new Array(playerCount).fill(0);
+        players.forEach(p => p.hintUsed = false);
+        currentPlayer = 0;
+        isLock = false;
+        gameInProgress = false;
+        
+        renderScoreboard();
 
-    // קביעת כמות עמודות לפי כמות קלפים
-    let cols = 4;
-    if (totalCards >= 36) cols = 9;
-    else if (totalCards >= 30) cols = 6;
-    else if (totalCards >= 20) cols = 5;
-    board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        let cols = 4;
+        if (totalCards >= 36) cols = 9;
+        else if (totalCards >= 28) cols = 7;
+        else if (totalCards >= 20) cols = 5;
+        board.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
-    // --- לוגיקת ההגרלה החדשה ---
-    const selectedSet = [...(data[category] || data.foods)];
-    
-    // 1. ערבוב כל הקטגוריה כדי שלא תמיד ייבחרו אותם אימוג'ים
-    const shuffledFullSet = selectedSet.sort(() => Math.random() - 0.5);
-    
-    // 2. בחירת כמות הזוגות הדרושה מתוך הסט המעורבב
-    let items = shuffledFullSet.slice(0, totalCards / 2);
-    
-    // 3. הכפלה לזוגות וערבוב סופי של הלוח
-    items = [...items, ...items].sort(() => Math.random() - 0.5);
-    // ----------------------------
+        const selectedSet = [...(data[category] || data.foods)];
+        const shuffledFullSet = selectedSet.sort(() => Math.random() - 0.5);
+        
+        let items = shuffledFullSet.slice(0, totalCards / 2);
+        items = [...items, ...items].sort(() => Math.random() - 0.5);
 
-    items.forEach((val) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.dataset.val = val;
-        card.innerHTML = `
-            <div class="card-face card-front">
-                <div class="speak-trigger" onclick="handleSpeakClick(event, '${val}')">📢</div>
-                ${val}
-            </div>
-            <div class="card-face card-back"></div>
-        `;
-        card.onclick = (e) => handleFlip(card, e);
-        board.appendChild(card);
-    });
-}
-    // פונקציית הרמז המותאמת לילד בן 4
+        items.forEach((item) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            const isImage = typeof item === 'object' && item.img;
+            const cardVal = isImage ? item.id : item;
+            card.dataset.val = cardVal;
+
+            let faceContent = isImage 
+                ? `<img src="${item.img}" alt="נסיכה" />` 
+                : item;
+
+            const speakButtonHtml = category !== 'princesses' 
+                ? `<div class="speak-trigger" onclick="handleSpeakClick(event, '${cardVal}')">📢</div>` 
+                : '';
+
+            card.innerHTML = `
+                <div class="card-face card-front">
+                    ${speakButtonHtml}
+                    ${faceContent}
+                </div>
+                <div class="card-face card-back"></div>
+            `;
+            card.onclick = (e) => handleFlip(card, e);
+            board.appendChild(card);
+        });
+    }
+
     function useHint(playerIdx) {
         if (isLock || flipped.length > 0 || players[playerIdx].hintUsed || playerIdx !== currentPlayer) return;
         
@@ -496,7 +523,6 @@
         players[playerIdx].hintUsed = true;
         renderScoreboard();
 
-        // תוספת קולית לרמז
         speak("hocus pocus!", "eng-US");
 
         const cards = document.querySelectorAll('.card:not(.matched)');
@@ -505,7 +531,7 @@
         setTimeout(() => {
             cards.forEach(c => c.classList.remove('xray'));
             isLock = false;
-        }, 2500); // 2.5 שניות - זמן מורחב לילדים
+        }, 2500);
     }
 
     function handleSpeakClick(e, val) {
