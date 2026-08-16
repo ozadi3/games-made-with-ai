@@ -41,33 +41,63 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            padding: 20px 15px;
+            padding: 15px 10px;
             box-shadow: 2px 0 15px rgba(0,0,0,0.1);
             z-index: 20;
             flex-shrink: 0;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 65px;
+            padding: 10px 5px;
+        }
+
+        .toggle-sidebar-btn {
+            position: absolute;
+            top: 10px;
+            left: -12px;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 30;
+            font-size: 12px;
+            border: 2px solid white;
         }
 
         .logo {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-weight: bold;
             color: var(--primary);
+            white-space: nowrap;
+            overflow: hidden;
         }
+
+        .sidebar.collapsed .logo { display: none; }
 
         .scoreboard-side {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: auto;
             overflow-y: auto;
         }
 
         .player-box {
-            padding: 12px 10px;
-            border-radius: 15px;
+            padding: 10px 8px;
+            border-radius: 12px;
             text-align: center;
-            border: 3px solid transparent;
+            border: 2px solid transparent;
             transition: all 0.3s ease;
             opacity: 0.5;
             background: #f8f9fa;
@@ -82,39 +112,47 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        .score { font-size: 1.8rem; font-weight: 900; }
+        .score { font-size: 1.5rem; font-weight: 900; }
         
         .name-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 4px;
             font-weight: bold;
-            font-size: 0.9rem;
-            margin-bottom: 5px;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+            white-space: nowrap;
         }
+
+        .sidebar.collapsed .player-name { display: none; }
+        .sidebar.collapsed .edit-btn { display: none; }
+        .sidebar.collapsed .score { font-size: 1.2rem; }
 
         .hint-btn {
             background: #fff;
             border: 2px solid #ffd32a;
-            border-radius: 20px;
-            padding: 6px 12px;
-            font-size: 0.8rem;
+            border-radius: 15px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
             cursor: pointer;
-            margin-top: 5px;
+            margin-top: 4px;
             color: #ffa801;
             display: inline-block;
             font-weight: bold;
             transition: all 0.2s;
-            box-shadow: 0 3px 0 #ffd32a;
+            box-shadow: 0 2px 0 #ffd32a;
+            white-space: nowrap;
         }
+
+        .sidebar.collapsed .hint-btn span { display: none; }
         .hint-btn:active { transform: translateY(2px); box-shadow: none; }
         .hint-btn.used { opacity: 0.2; cursor: default; filter: grayscale(1); box-shadow: none; }
 
         .edit-btn {
             font-size: 11px;
             cursor: pointer;
-            padding: 4px;
+            padding: 3px;
             border-radius: 50%;
             background: #eee;
             line-height: 1;
@@ -125,31 +163,36 @@
         .controls {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding-top: 15px;
+            gap: 6px;
+            padding-top: 10px;
             border-top: 2px solid #eee;
+            transition: opacity 0.2s;
         }
 
-        .controls label { font-size: 0.75rem; font-weight: bold; color: #666; margin-top: 5px; }
+        .sidebar.collapsed .controls {
+            display: none;
+        }
 
-        select, button {
+        .controls label { font-size: 0.7rem; font-weight: bold; color: #666; }
+
+        select, .action-btn {
             width: 100%;
-            padding: 10px;
-            border-radius: 12px;
+            padding: 8px;
+            border-radius: 10px;
             border: 2px solid var(--primary);
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             background: white;
         }
 
-        button {
+        .action-btn {
             background: var(--primary);
             color: white;
-            box-shadow: 0 4px 0 #5649c0;
+            box-shadow: 0 3px 0 #5649c0;
             cursor: pointer;
         }
 
-        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #5649c0; }
+        .action-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #5649c0; }
 
         .main-area {
             flex-grow: 1;
@@ -161,6 +204,7 @@
             overflow: hidden;
         }
 
+        /* גריד קשיח ומרובע לשמירה על שורות מוגדרות */
         .game-board {
             display: grid;
             gap: 8px;
@@ -179,6 +223,7 @@
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             width: 100%;
             height: 100%;
+            max-height: calc((100vh - 30px) / var(--rows, 4));
             cursor: pointer;
         }
 
@@ -203,7 +248,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: clamp(1.5rem, 6vh, 3.5rem);
+            font-size: clamp(1.2rem, 5vh, 3rem);
             border-radius: 12px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             border: 2px solid white;
@@ -293,33 +338,30 @@
             z-index: 30;
         }
 
-        /* להתאמה מיטבית במכשירים ניידים במצב Landscape */
         @media (max-height: 500px) and (orientation: landscape) {
-            .sidebar { width: 160px; padding: 10px; }
-            .logo { font-size: 1.1rem; margin-bottom: 10px; }
-            .player-box { padding: 6px; }
-            .score { font-size: 1.2rem; }
-            .name-container { font-size: 0.75rem; }
-            .hint-btn { padding: 3px 8px; font-size: 0.7rem; }
-            .controls { padding-top: 5px; gap: 4px; }
-            select, button { padding: 6px; font-size: 11px; }
+            .sidebar { padding: 10px 5px; }
+            .player-box { padding: 5px 3px; }
+            .score { font-size: 1.1rem; }
+            .hint-btn { padding: 2px 5px; font-size: 0.65rem; }
+            select, .action-btn { padding: 5px; font-size: 10px; }
             .main-area { padding: 5px; }
         }
 
         @media (max-width: 768px) and (orientation: portrait) {
             body { flex-direction: column; }
-            .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; }
-            .logo, .controls label { display: none; }
+            .sidebar { width: 100% !important; height: auto; flex-direction: row; padding: 10px; }
+            .toggle-sidebar-btn, .logo, .controls label { display: none; }
             .scoreboard-side { flex-direction: row; flex-grow: 1; margin: 0; gap: 5px; overflow-x: auto; }
-            .player-box { padding: 5px; flex: 1; min-width: 100px; }
-            .score { font-size: 1.2rem; }
-            .controls { flex-direction: row; border: none; padding: 0; gap: 5px; }
+            .player-box { padding: 5px; flex: 1; min-width: 80px; }
+            .player-name { display: inline !important; }
+            .controls { flex-direction: row; border: none; padding: 0; gap: 5px; display: flex !important; }
             .main-area { padding: 10px; }
         }
     </style>
 </head>
 <body onclick="unlockAudio()">
-    <aside class="sidebar">
+    <aside id="sidebar" class="sidebar">
+        <div class="toggle-sidebar-btn" onclick="toggleSidebar()" title="כווץ/הרחב פאנל">◀</div>
         <div class="logo">זיכרון ✨</div>
         <div id="scoreboard-container" class="scoreboard-side"></div>
 
@@ -349,7 +391,7 @@
                 <option value="24">24 חלקים</option>
                 <option value="28">28 חלקים</option>
             </select>
-            <button onclick="initGame()">התחל! 🚀</button>
+            <button class="action-btn" onclick="startGameWithCollapse()">התחל! 🚀</button>
         </div>
     </aside>
 
@@ -366,7 +408,7 @@
                 <div class="gender-btn" id="g-boy" onclick="selectGender('👦')">👦 בן</div>
                 <div class="gender-btn" id="g-girl" onclick="selectGender('👧')">👧 בת</div>
             </div>
-            <button onclick="savePlayerEdit()">שמור ✅</button>
+            <button class="action-btn" onclick="savePlayerEdit()">שמור ✅</button>
         </div>
     </div>
 
@@ -417,6 +459,25 @@
     let tempEmoji = '👦';
     let gameInProgress = false;
     let audioUnlocked = false;
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const btn = document.querySelector('.toggle-sidebar-btn');
+        sidebar.classList.toggle('collapsed');
+        btn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
+        
+        setTimeout(() => { initGameLayoutOnly(); }, 300);
+    }
+
+    function startGameWithCollapse() {
+        initGame();
+        if (window.innerWidth > window.innerHeight && window.innerWidth <= 1024) {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar.classList.contains('collapsed')) {
+                toggleSidebar();
+            }
+        }
+    }
 
     function unlockAudio() {
         if (audioUnlocked) return;
@@ -474,6 +535,40 @@
         initGame();
     }
 
+    function getGridDimensions(totalCards, isLandscape) {
+        if (isLandscape) {
+            switch (totalCards) {
+                case 12: return { rows: 3, cols: 4 };
+                case 16: return { rows: 4, cols: 4 };
+                case 20: return { rows: 4, cols: 5 };
+                case 24: return { rows: 4, cols: 6 };
+                case 28: return { rows: 4, cols: 7 };
+                default: return { rows: 4, cols: 4 };
+            }
+        } else {
+            switch (totalCards) {
+                case 12: return { rows: 4, cols: 3 };
+                case 16: return { rows: 4, cols: 4 };
+                case 20: return { rows: 5, cols: 4 };
+                case 24: return { rows: 6, cols: 4 };
+                case 28: return { rows: 7, cols: 4 };
+                default: return { rows: 4, cols: 4 };
+            }
+        }
+    }
+
+    function initGameLayoutOnly() {
+        const board = document.getElementById('board');
+        const totalCards = parseInt(document.getElementById('size-select').value);
+        const isLandscape = window.innerWidth > window.innerHeight;
+        
+        const { rows, cols } = getGridDimensions(totalCards, isLandscape);
+
+        board.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        board.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+        document.documentElement.style.setProperty('--rows', rows);
+    }
+
     function initGame() {
         unlockAudio();
         const board = document.getElementById('board');
@@ -489,17 +584,7 @@
         gameInProgress = false;
         
         renderScoreboard();
-
-        // התאמה דינמית של הטורים בהתאם ליחס הגובה/רוחב של המסך
-        const isLandscape = window.innerWidth > window.innerHeight;
-        let cols;
-        if (isLandscape) {
-            cols = totalCards <= 16 ? 6 : (totalCards <= 24 ? 8 : 10);
-        } else {
-            cols = totalCards <= 16 ? 4 : (totalCards <= 24 ? 5 : 6);
-        }
-        
-        board.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+        initGameLayoutOnly();
 
         const selectedSet = [...(data[category] || data.foods)];
         const shuffledFullSet = selectedSet.sort(() => Math.random() - 0.5);
@@ -571,11 +656,14 @@
             box.style.color = `var(--p-color-${i})`;
             box.innerHTML = `
                 <div class="name-container">
-                    <span>${p.name} ${p.emoji}</span>
+                    <span>${p.emoji}</span>
+                    <span class="player-name">${p.name}</span>
                     <span class="edit-btn" onclick="openEditModal(${i})">✏️</span>
                 </div>
                 <div class="score">${scores[i]}</div>
-                <div class="hint-btn ${p.hintUsed ? 'used' : ''}" onclick="event.stopPropagation(); useHint(${i})">🪄 קסם!</div>
+                <div class="hint-btn ${p.hintUsed ? 'used' : ''}" onclick="event.stopPropagation(); useHint(${i})">
+                    🪄<span> קסם!</span>
+                </div>
             `;
             container.appendChild(box);
         }
@@ -664,13 +752,19 @@
 
             gameInProgress = false;
             renderScoreboard();
+            
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('collapsed')) {
+                toggleSidebar();
+            }
+
             setTimeout(() => { speak(speechMessage); alert(winMessage); }, 700);
         }
     }
 
     window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-    window.addEventListener('resize', initGame);
-    window.onload = initGame;
+    window.addEventListener('resize', initGameLayoutOnly);
+    window.onload = startGameWithCollapse;
 </script>
 </body>
 </html>
